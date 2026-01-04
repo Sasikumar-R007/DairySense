@@ -1,0 +1,9 @@
+/**
+ * API Configuration
+ * Base URL for backend API
+ */
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+export default API_BASE_URL;
+

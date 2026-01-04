@@ -1,0 +1,168 @@
+.live-table {
+  width: 100%;
+}
+
+.live-table-card {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.table-header h2 {
+  font-size: 24px;
+  margin: 0;
+  color: #333;
+}
+
+.live-badge {
+  background: #4caf50;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.section-description {
+  color: #666;
+  margin-bottom: 25px;
+  font-size: 14px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  margin-bottom: 20px;
+}
+
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+.log-table th {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 15px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.log-table td {
+  padding: 15px;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 14px;
+}
+
+.log-table tbody tr:hover {
+  background-color: #f5f7fa;
+}
+
+.log-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.cow-id {
+  font-weight: 600;
+  color: #667eea;
+}
+
+.cow-type {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.cow-type.normal {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.cow-type.pregnant {
+  background-color: #fce4ec;
+  color: #c2185b;
+}
+
+.cow-type.dry {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+.cow-type.unknown {
+  background-color: #f5f5f5;
+  color: #757575;
+}
+
+.total-yield {
+  font-weight: 600;
+  color: #2e7d32;
+  font-size: 15px;
+}
+
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+  font-size: 16px;
+}
+
+.table-stats {
+  display: flex;
+  gap: 30px;
+  padding-top: 20px;
+  border-top: 2px solid #e0e0e0;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .table-wrapper {
+    margin: 0 -30px;
+    padding: 0 30px;
+  }
+  
+  .table-stats {
+    flex-direction: column;
+    gap: 15px;
+  }
+}
+

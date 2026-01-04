@@ -1,0 +1,273 @@
+/* Monitoring Cow List Styles */
+
+.monitoring-cow-list {
+  min-height: 100vh;
+  background: linear-gradient(to bottom, #fff9e6 0%, #f5f5f0 100%);
+  padding: 1rem;
+}
+
+.cow-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.cow-list-header h1 {
+  font-size: 1.75rem;
+  color: #6b5b2e;
+  margin: 0;
+  flex: 1;
+}
+
+.date-input-small {
+  padding: 0.5rem;
+  border: 2px solid #d4a574;
+  border-radius: 8px;
+  background: #fff;
+  color: #6b5b2e;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.filters-section {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #fff;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 2px solid #d4a574;
+}
+
+.search-box svg {
+  color: #8b7355;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #6b5b2e;
+  font-size: 1rem;
+}
+
+.search-input::placeholder {
+  color: #a8a095;
+}
+
+.status-filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 0.5rem 1rem;
+  background: #fff;
+  border: 2px solid #d4a574;
+  border-radius: 8px;
+  color: #6b5b2e;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover {
+  background: #fff8e6;
+}
+
+.filter-btn.active {
+  background: #d4a574;
+  color: #fff;
+  font-weight: 600;
+}
+
+.error-banner {
+  background: #ffe6e6;
+  border: 2px solid #e67e22;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.error-banner button {
+  padding: 0.5rem 1rem;
+  background: #e67e22;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.cows-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.cow-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(107, 91, 46, 0.1);
+  border: 1px solid #e8dcc0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cow-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(107, 91, 46, 0.15);
+  border-color: #d4a574;
+}
+
+.cow-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.cow-card-header h3 {
+  font-size: 1.25rem;
+  color: #6b5b2e;
+  margin: 0;
+  font-weight: 700;
+}
+
+.status-icon {
+  flex-shrink: 0;
+}
+
+.status-icon.normal {
+  color: #6b8e6b;
+}
+
+.status-icon.slight-drop {
+  color: #ffa07a;
+}
+
+.status-icon.attention {
+  color: #e67e22;
+}
+
+.cow-stats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.cow-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #8b7355;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 1.125rem;
+  color: #6b5b2e;
+  font-weight: 700;
+}
+
+.cow-status-badge {
+  margin-top: 0.5rem;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.normal {
+  background: #e6f5e6;
+  color: #6b8e6b;
+}
+
+.status-badge.slight-drop {
+  background: #fff4e6;
+  color: #ffa07a;
+}
+
+.status-badge.attention {
+  background: #ffe6e6;
+  color: #e67e22;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #8b7355;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 1rem;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e8dcc0;
+  border-top-color: #d4a574;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+  .cows-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cow-list-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .status-filters {
+    width: 100%;
+  }
+
+  .filter-btn {
+    flex: 1;
+    min-width: calc(25% - 0.375rem);
+  }
+}
+
