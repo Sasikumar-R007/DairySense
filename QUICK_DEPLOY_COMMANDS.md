@@ -8,10 +8,22 @@
 NODE_ENV=production
 PORT=10000
 FRONTEND_URL=https://your-frontend.vercel.app  # Update after frontend deploy
-DATABASE_URL=postgresql://postgres:PASSWORD@db.xxxxx.supabase.co:5432/postgres
+
+# IMPORTANT: Use Supabase Connection Pooling (recommended for Render)
+# Get this from: Supabase Dashboard → Settings → Database → Connection Pooling → Transaction mode
+DATABASE_URL=postgresql://postgres.xxxxx:URL_ENCODED_PASSWORD@aws-0-region.pooler.supabase.com:6543/postgres
+
+# OR use direct connection (ensure IPv4, not IPv6)
+# DATABASE_URL=postgresql://postgres:URL_ENCODED_PASSWORD@db.xxxxx.supabase.co:5432/postgres
+
 JWT_SECRET=your-random-secret-here
 DB_SSL=true
 ```
+
+**⚠️ IMPORTANT**: 
+- URL encode your password if it has special characters (@, #, $, %, etc.)
+- Use Connection Pooling (port 6543) for better Render compatibility
+- See `FIX_RENDER_CONNECTION.md` if you get connection errors
 
 ### For Vercel (Frontend) - Add these in Vercel Dashboard → Environment Variables:
 

@@ -20,6 +20,7 @@ Complete guide to deploy DairySense to Vercel (Frontend), Render (Backend), and 
 1. Go to https://app.supabase.com/
 2. Click **"New Project"**
 3. Fill in:
+
    - **Organization**: Select or create one
    - **Name**: `dairysense-db` (or your choice)
    - **Database Password**: Create a strong password (save this!)
@@ -33,12 +34,26 @@ Complete guide to deploy DairySense to Vercel (Frontend), Render (Backend), and 
 1. Once project is ready, go to **Settings → Database**
 2. Scroll to **Connection string** section
 3. Select **URI** tab
-4. Copy the connection string (looks like):
-   ```
-   postgresql://postgres:[YOUR-PASSWORD]@db.xxxxx.supabase.co:5432/postgres
-   ```
+4. **IMPORTANT for Render**: Use the **IPv4 connection string** (not IPv6)
+   - Look for **"Connection pooling"** section
+   - Select **"Session mode"** or **"Transaction mode"**
+   - Copy the connection string (looks like):
+     ```
+     postgresql://postgres:[YOUR-PASSWORD]@db.xxxxx.supabase.co:5432/postgres
+     ```
+   - **OR** use the **"Direct connection"** option and ensure it uses IPv4
 5. **Replace `[YOUR-PASSWORD]`** with the actual password you created
-6. Save this for later (you'll need it for Render)
+6. **URL Encode the password** if it contains special characters:
+   - Replace `@` with `%40`
+   - Replace `#` with `%23`
+   - Replace `$` with `%24`
+   - Replace `%` with `%25`
+   - Replace `&` with `%26`
+   - Replace `+` with `%2B`
+   - Replace `=` with `%3D`
+   - Replace `?` with `%3F`
+   - Replace `/` with `%2F`
+7. Save this for later (you'll need it for Render)
 
 ### 1.3 Enable SSL (Important!)
 
@@ -97,6 +112,7 @@ DB_SSL=true
 ```
 
 **Important Notes:**
+
 - Replace `YOUR_PASSWORD` with your actual Supabase password
 - Replace `xxxxx` with your Supabase project details
 - Replace `your-frontend-url.vercel.app` with your Vercel URL (you'll update this after deploying frontend)
@@ -198,6 +214,7 @@ curl -X POST https://your-backend-url.onrender.com/api/auth/register \
 ### Option B: Create User Script (Local)
 
 1. Set up local environment variables:
+
    ```bash
    cd backend
    cp env.example .env
@@ -226,15 +243,18 @@ curl -X POST https://your-backend-url.onrender.com/api/auth/register \
 ### 5.3 Common Issues
 
 **CORS Errors:**
+
 - Verify `FRONTEND_URL` in Render matches your Vercel URL exactly
 - Check for trailing slashes
 
 **Database Connection Errors:**
+
 - Verify `DATABASE_URL` is correct in Render
 - Make sure password doesn't have special characters that need URL encoding
 - Check Supabase project is active
 
 **404 Errors on Frontend:**
+
 - Vercel should handle routing automatically with the config
 - If not, check `vercel.json` is in the frontend directory
 
@@ -243,6 +263,7 @@ curl -X POST https://your-backend-url.onrender.com/api/auth/register \
 ## Environment Variables Summary
 
 ### Render (Backend) - Required:
+
 ```
 NODE_ENV=production
 PORT=10000
@@ -253,6 +274,7 @@ DB_SSL=true
 ```
 
 ### Vercel (Frontend) - Required:
+
 ```
 VITE_API_URL=https://your-backend.onrender.com/api
 ```
@@ -262,19 +284,23 @@ VITE_API_URL=https://your-backend.onrender.com/api
 ## Useful Commands
 
 ### Check Backend Logs (Render)
+
 - Go to Render dashboard → Your service → Logs
 
 ### Check Frontend Logs (Vercel)
+
 - Go to Vercel dashboard → Your project → Deployments → Click deployment → Logs
 
 ### Update Environment Variables
 
 **Render:**
+
 1. Dashboard → Service → Environment
 2. Update variable
 3. Save (auto-redeploys)
 
 **Vercel:**
+
 1. Dashboard → Project → Settings → Environment Variables
 2. Update variable
 3. Redeploy (automatic or manual)
@@ -284,15 +310,18 @@ VITE_API_URL=https://your-backend.onrender.com/api
 ## Monitoring & Maintenance
 
 ### Database Monitoring (Supabase)
+
 - Go to Supabase dashboard → Your project → Database
 - Check connection pool usage
 - Monitor query performance
 
 ### Backend Monitoring (Render)
+
 - Free tier: Limited logs
 - Upgrade for better monitoring
 
 ### Frontend Monitoring (Vercel)
+
 - Check deployment status
 - View analytics (if enabled)
 
@@ -301,16 +330,19 @@ VITE_API_URL=https://your-backend.onrender.com/api
 ## Troubleshooting
 
 ### Backend won't start
+
 - Check Render logs for errors
 - Verify all environment variables are set
 - Check database connection string
 
 ### Frontend can't connect to backend
+
 - Verify `VITE_API_URL` is correct
 - Check CORS settings in backend
 - Verify backend is running (health check)
 
 ### Database connection fails
+
 - Verify Supabase project is active
 - Check connection string format
 - Ensure SSL is enabled (`DB_SSL=true`)
@@ -330,6 +362,7 @@ VITE_API_URL=https://your-backend.onrender.com/api
 ## Support
 
 If you encounter issues:
+
 1. Check logs in Render/Vercel dashboards
 2. Verify all environment variables
 3. Test API endpoints directly with Postman/curl
@@ -338,4 +371,3 @@ If you encounter issues:
 ---
 
 **Happy Deploying! 🚀**
-
