@@ -58,30 +58,15 @@ const hasDatabaseUrl = process.env.DATABASE_URL && process.env.DATABASE_URL.trim
 const hasDbHost = process.env.DB_HOST && process.env.DB_HOST.trim() !== '' && process.env.DB_HOST !== 'your-supabase-host';
 
 if (hasDatabaseUrl) {
-  // Parse connection string to extract components
-  // This gives us better control and ensures IPv4 preference
-  const parsed = parseConnectionString(process.env.DATABASE_URL);
+  // Check if this is a Supabase connection pooling connection (port 6543)
+  // For connection pooling, we should use the connection string directly
+  // as Supabase handles authentication differently with the postgres.xxxxx format
+  const isPoolingConnection = process.env.DATABASE_URL.includes(':6543') || 
+                                process.env.DATABASE_URL.includes('.pooler.supabase.com');
   
-  if (parsed) {
-    // Use parsed components - this allows better control
-    poolConfig = {
-      host: parsed.host,
-      port: parsed.port,
-      database: parsed.database,
-      user: parsed.user,
-      password: parsed.password,
-      // Supabase requires SSL - always enable it
-      // rejectUnauthorized: false allows self-signed certificates in chain
-      // This is needed for Supabase's SSL certificate setup, especially with pooling
-      ssl: {
-        rejectUnauthorized: false // Required for Supabase's SSL certificate chain
-      }
-    };
-    
-    console.log(`✅ Database config: ${parsed.user}@${parsed.host}:${parsed.port}/${parsed.database}`);
-    console.log(`   Using IPv4 preference (Render compatibility)`);
-  } else {
-    // Fallback to connection string if parsing fails
+  if (isPoolingConnection) {
+    // For Supabase connection pooling, use connection string directly
+    // The format postgres.xxxxx is the correct username format for pooling
     let normalizedUrl = process.env.DATABASE_URL
       .replace(/[?&]sslmode=[^&]*/g, '')
       .replace(/[?&]ssl=[^&]*/g, '')
@@ -90,11 +75,51 @@ if (hasDatabaseUrl) {
     poolConfig = {
       connectionString: normalizedUrl,
       ssl: {
-        rejectUnauthorized: false
+        rejectUnauthorized: false // Required for Supabase's SSL certificate chain
       }
     };
     
-    console.log(`✅ Using connection string (parsed format)`);
+    // Extract hostname for logging
+    const hostMatch = normalizedUrl.match(/@([^:]+):(\d+)\//);
+    const hostname = hostMatch ? hostMatch[1] : 'unknown';
+    const port = hostMatch ? hostMatch[2] : 'unknown';
+    
+    console.log(`✅ Database config: Connection pooling (${hostname}:${port})`);
+    console.log(`   Using IPv4 preference (Render compatibility)`);
+  } else {
+    // For direct connections, parse the connection string
+    const parsed = parseConnectionString(process.env.DATABASE_URL);
+    
+    if (parsed) {
+      poolConfig = {
+        host: parsed.host,
+        port: parsed.port,
+        database: parsed.database,
+        user: parsed.user,
+        password: parsed.password,
+        ssl: {
+          rejectUnauthorized: false
+        }
+      };
+      
+      console.log(`✅ Database config: ${parsed.user}@${parsed.host}:${parsed.port}/${parsed.database}`);
+      console.log(`   Using IPv4 preference (Render compatibility)`);
+    } else {
+      // Fallback to connection string if parsing fails
+      let normalizedUrl = process.env.DATABASE_URL
+        .replace(/[?&]sslmode=[^&]*/g, '')
+        .replace(/[?&]ssl=[^&]*/g, '')
+        .replace(/[?&]+$/, '');
+      
+      poolConfig = {
+        connectionString: normalizedUrl,
+        ssl: {
+          rejectUnauthorized: false
+        }
+      };
+      
+      console.log(`✅ Using connection string directly`);
+    }
   }
 } else if (hasDbHost) {
   // Use individual config variables
