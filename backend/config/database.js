@@ -1,6 +1,7 @@
 /**
  * PostgreSQL Database Connection
  * Uses Supabase as managed PostgreSQL
+ * Configured for Render deployment with IPv4 support
  */
 
 import pkg from 'pg';
@@ -9,27 +10,44 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Helper function to normalize connection string and handle SSL
-function normalizeConnectionString(connectionString) {
-  // If connection string contains IPv6, try to convert to use IPv4
-  // Supabase provides both options, but we need IPv4 for Render compatibility
-  if (connectionString.includes('[') && connectionString.includes(']')) {
-    // IPv6 format: postgresql://user:pass@[ipv6]:5432/db
-    // We'll keep it as is for now, but add ?pgbouncer=true to use connection pooling
-    // Or parse and reconstruct with IPv4 if available
-    console.log('⚠️  IPv6 connection string detected. Ensure Supabase connection uses IPv4 or pooling.');
-  }
-  
+// Force Node.js to prefer IPv4 over IPv6
+// This is critical for Render free tier which doesn't support IPv6
+import dns from 'dns';
+
+if (typeof process.setDefaultResultOrder === 'function') {
+  // Node.js 17.0.0+
+  process.setDefaultResultOrder('ipv4first');
+} else if (typeof dns.setDefaultResultOrder === 'function') {
+  // Node.js 17.0.0+ (alternative method)
+  dns.setDefaultResultOrder('ipv4first');
+}
+
+// Helper function to normalize connection string and parse it
+function parseConnectionString(connectionString) {
   // Remove any existing sslmode or ssl parameters from connection string
   // We'll handle SSL through the Pool's ssl option instead
-  // This prevents conflicts and ensures rejectUnauthorized: false works
   connectionString = connectionString.replace(/[?&]sslmode=[^&]*/g, '');
   connectionString = connectionString.replace(/[?&]ssl=[^&]*/g, '');
-  
-  // Clean up any double ? or & at the end
   connectionString = connectionString.replace(/[?&]+$/, '');
   
-  return connectionString;
+  // Parse the connection string
+  // Format: postgresql://user:password@host:port/database
+  const urlPattern = /^postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)$/;
+  const match = connectionString.match(urlPattern);
+  
+  if (match) {
+    const [, user, password, hostname, port, database] = match;
+    return {
+      user: decodeURIComponent(user),
+      password: decodeURIComponent(password),
+      host: hostname,
+      port: parseInt(port),
+      database: database
+    };
+  }
+  
+  // If parsing fails, return null to use connection string directly
+  return null;
 }
 
 // Create connection pool configuration
@@ -40,21 +58,44 @@ const hasDatabaseUrl = process.env.DATABASE_URL && process.env.DATABASE_URL.trim
 const hasDbHost = process.env.DB_HOST && process.env.DB_HOST.trim() !== '' && process.env.DB_HOST !== 'your-supabase-host';
 
 if (hasDatabaseUrl) {
-  // Normalize connection string (handle IPv6, remove conflicting SSL params)
-  let normalizedUrl = normalizeConnectionString(process.env.DATABASE_URL);
+  // Parse connection string to extract components
+  // This gives us better control and ensures IPv4 preference
+  const parsed = parseConnectionString(process.env.DATABASE_URL);
   
-  // Use connection string if provided
-  // Important: For Supabase connection pooling, SSL is required
-  // We set rejectUnauthorized: false to handle certificate chain issues
-  poolConfig = {
-    connectionString: normalizedUrl,
-    // Supabase requires SSL - always enable it
-    // rejectUnauthorized: false allows self-signed certificates in chain
-    // This is needed for Supabase's SSL certificate setup, especially with pooling
-    ssl: {
-      rejectUnauthorized: false // Required for Supabase's SSL certificate chain
-    }
-  };
+  if (parsed) {
+    // Use parsed components - this allows better control
+    poolConfig = {
+      host: parsed.host,
+      port: parsed.port,
+      database: parsed.database,
+      user: parsed.user,
+      password: parsed.password,
+      // Supabase requires SSL - always enable it
+      // rejectUnauthorized: false allows self-signed certificates in chain
+      // This is needed for Supabase's SSL certificate setup, especially with pooling
+      ssl: {
+        rejectUnauthorized: false // Required for Supabase's SSL certificate chain
+      }
+    };
+    
+    console.log(`✅ Database config: ${parsed.user}@${parsed.host}:${parsed.port}/${parsed.database}`);
+    console.log(`   Using IPv4 preference (Render compatibility)`);
+  } else {
+    // Fallback to connection string if parsing fails
+    let normalizedUrl = process.env.DATABASE_URL
+      .replace(/[?&]sslmode=[^&]*/g, '')
+      .replace(/[?&]ssl=[^&]*/g, '')
+      .replace(/[?&]+$/, '');
+    
+    poolConfig = {
+      connectionString: normalizedUrl,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    };
+    
+    console.log(`✅ Using connection string (parsed format)`);
+  }
 } else if (hasDbHost) {
   // Use individual config variables
   if (!process.env.DB_USER || !process.env.DB_PASSWORD) {
@@ -72,6 +113,8 @@ if (hasDatabaseUrl) {
       rejectUnauthorized: false // Required for Supabase
     }
   };
+  
+  console.log(`✅ Database config: ${process.env.DB_USER}@${process.env.DB_HOST}:${poolConfig.port}`);
 } else {
   console.error('\n❌ Database configuration error: DATABASE_URL or DB_HOST must be set in .env file');
   console.error('\n📝 To fix this:');
@@ -115,6 +158,12 @@ pool.on('error', (err) => {
     console.error('1. Check your database host and port are correct');
     console.error('2. Verify firewall settings');
     console.error('3. Ensure Supabase project is not paused\n');
+  } else if (err.code === 'ENETUNREACH') {
+    console.error('\n⚠️  Network unreachable (IPv6 detected).');
+    console.error('Render free tier does not support IPv6 connections.');
+    console.error('Solution: Ensure your DATABASE_URL uses connection pooling (port 6543)');
+    console.error('Format: postgresql://postgres.xxxxx:PASSWORD@aws-0-region.pooler.supabase.com:6543/postgres');
+    console.error('Current connection: Check your DATABASE_URL environment variable\n');
   } else if (err.code === 'SELF_SIGNED_CERT_IN_CHAIN') {
     console.error('\n⚠️  SSL certificate error. This should be handled automatically.');
     console.error('If you see this, the SSL configuration may need adjustment.\n');
@@ -123,4 +172,3 @@ pool.on('error', (err) => {
 });
 
 export default pool;
-
