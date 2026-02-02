@@ -75,22 +75,24 @@ function LandingPage() {
             </button>
           </div>
           <div className="hero-images">
+            <img 
+              src="/assests/image 4 removebg.png" 
+              alt="Dairy Management System"
+              className="hero-main-image"
+              onError={(e) => {
+                e.target.src = '/assests/image 3 removebg.png';
+              }}
+            />
             <div className="floating-image image-1">
               <img 
-                src="/assests/image 3 removebg.png" 
+                src="/assests/image 2 removebg.png" 
                 alt="Dairy Management"
-                onError={(e) => {
-                  e.target.src = '/assests/image 2 removebg.png';
-                }}
               />
             </div>
             <div className="floating-image image-2">
               <img 
-                src="/assests/image 2 removebg.png" 
+                src="/assests/image 3 removebg.png" 
                 alt="Smart Dairy"
-                onError={(e) => {
-                  e.target.src = '/assests/image 3 removebg.png';
-                }}
               />
             </div>
           </div>
@@ -99,25 +101,27 @@ function LandingPage() {
 
       {/* Features Section */}
       <div className="landing-features">
-        <div className="feature-card">
-          <div className="feature-icon">🐄</div>
-          <h3>Lane-based Tracking</h3>
-          <p>Track cows through feeding lanes with RFID technology</p>
-        </div>
-        <div className="feature-card">
-          <div className="feature-icon">🥛</div>
-          <h3>Milk Yield Monitoring</h3>
-          <p>Monitor and record daily milk production</p>
-        </div>
-        <div className="feature-card">
-          <div className="feature-icon">🌾</div>
-          <h3>Feed Management</h3>
-          <p>Optimize feed distribution for better yields</p>
-        </div>
-        <div className="feature-card">
-          <div className="feature-icon">📊</div>
-          <h3>Real-time Dashboard</h3>
-          <p>Get instant insights into your dairy operations</p>
+        <div className="features-container">
+          <div className="feature-card">
+            <div className="feature-icon">🐄</div>
+            <h3>Lane-based Tracking</h3>
+            <p>Track cows through feeding lanes with RFID technology</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon">🥛</div>
+            <h3>Milk Yield Monitoring</h3>
+            <p>Monitor and record daily milk production</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon">🌾</div>
+            <h3>Feed Management</h3>
+            <p>Optimize feed distribution for better yields</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon">📊</div>
+            <h3>Real-time Dashboard</h3>
+            <p>Get instant insights into your dairy operations</p>
+          </div>
         </div>
       </div>
 

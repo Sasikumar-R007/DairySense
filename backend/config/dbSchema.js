@@ -8,8 +8,66 @@ import pool from './database.js';
 /**
  * Initialize database schema
  */
+/**
+ * Retry connection with exponential backoff
+ */
+async function connectWithRetry(maxRetries = 3, delay = 2000) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const client = await pool.connect();
+      return client;
+    } catch (error) {
+      if (attempt === maxRetries) {
+        throw error; // Re-throw on final attempt
+      }
+      console.log(`⏳ Connection attempt ${attempt} failed, retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      delay *= 2; // Exponential backoff
+    }
+  }
+}
+
 export async function initializeSchema() {
-  const client = await pool.connect();
+  let client;
+  try {
+    console.log('🔄 Attempting to connect to database...');
+    client = await connectWithRetry(3, 2000);
+    console.log('✅ Database connection established');
+  } catch (error) {
+    const errorMessage = error.message || '';
+    const isTimeout = errorMessage.includes('timeout') || errorMessage.includes('terminated');
+    
+    if (error.code === 'ENOTFOUND') {
+      console.error('\n❌ Cannot resolve database hostname. Please check:');
+      console.error('1. Your DATABASE_URL in .env file is correct');
+      console.error('2. The Supabase hostname is valid');
+      console.error('3. Your internet connection is working');
+      console.error('\nExample DATABASE_URL format:');
+      console.error('postgresql://postgres:YOUR_PASSWORD@db.xxxxx.supabase.co:5432/postgres\n');
+    } else if (isTimeout || error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
+      console.error('\n❌ Connection timeout or refused. Possible issues:');
+      console.error('1. Your Supabase project might still be initializing (wait 2-3 minutes after resuming)');
+      console.error('2. Connection pooling endpoint might be slow - try direct connection');
+      console.error('3. Check your internet connection and firewall settings');
+      console.error('4. Verify your Supabase project is fully active (not paused)\n');
+      console.error('💡 Tip: If using connection pooling (port 6543), try the direct connection (port 5432)');
+      console.error('   Get it from: Supabase Dashboard → Settings → Database → Connection string → Direct connection\n');
+    } else if (error.code === 'SELF_SIGNED_CERT_IN_CHAIN') {
+      console.error('\n❌ SSL certificate error detected.');
+      console.error('The SSL configuration should handle this automatically.');
+      console.error('If this error persists, try:');
+      console.error('1. Restart the server (the SSL config has been updated)');
+      console.error('2. Check if your Supabase project is fully active');
+      console.error('3. Verify the connection string is correct\n');
+    } else {
+      console.error('\n❌ Database connection error:', error.message);
+      console.error('Error code:', error.code);
+      if (error.cause) {
+        console.error('Underlying error:', error.cause.message);
+      }
+    }
+    throw error;
+  }
   
   try {
     // Create users table for authentication

@@ -10,6 +10,7 @@ function DailySummary() {
   const [data, setData] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [error, setError] = useState('');
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
 
   useEffect(() => {
     fetchSummary();
@@ -53,6 +54,7 @@ Lowest Performing Cow: ${data.lowestCowId || 'N/A'}
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    setShowDownloadModal(false);
   };
 
   if (loading) {
@@ -116,12 +118,17 @@ Lowest Performing Cow: ${data.lowestCowId || 'N/A'}
       <div className="summary-content">
         <div className="summary-date-banner">
           <Calendar size={20} />
-          <span>{new Date(data.date).toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}</span>
+          <span>{(() => {
+            // Parse date string properly to avoid timezone issues
+            const [year, month, day] = data.date.split('-').map(Number);
+            const date = new Date(year, month - 1, day);
+            return date.toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            });
+          })()}</span>
         </div>
 
         <div className="summary-stats-grid">
@@ -167,12 +174,46 @@ Lowest Performing Cow: ${data.lowestCowId || 'N/A'}
         </div>
 
         <div className="download-section">
-          <button className="download-btn" onClick={handleDownload}>
+          <button className="download-btn" onClick={() => setShowDownloadModal(true)}>
             <Download size={20} />
             <span>Download Report</span>
           </button>
         </div>
       </div>
+
+      {/* Download Confirmation Modal */}
+      {showDownloadModal && (
+        <div className="modal-overlay" onClick={() => setShowDownloadModal(false)}>
+          <div className="download-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Download Daily Report</h3>
+            <div className="download-preview">
+              <p><strong>Date:</strong> {(() => {
+                const [year, month, day] = data.date.split('-').map(Number);
+                const date = new Date(year, month - 1, day);
+                return date.toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                });
+              })()}</p>
+              <p><strong>Total Feed:</strong> {data.totalFeed.toFixed(1)} kg</p>
+              <p><strong>Total Milk:</strong> {data.totalMilk.toFixed(1)} L</p>
+              <p><strong>Yield-to-Feed Ratio:</strong> {data.totalFeed > 0 ? (data.totalMilk / data.totalFeed).toFixed(2) : '0.00'}</p>
+              <p><strong>Best Cow:</strong> {data.bestCowId || 'N/A'}</p>
+              <p><strong>Lowest Cow:</strong> {data.lowestCowId || 'N/A'}</p>
+            </div>
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={() => setShowDownloadModal(false)}>
+                Cancel
+              </button>
+              <button className="confirm-download-btn" onClick={handleDownload}>
+                <Download size={18} />
+                Download
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

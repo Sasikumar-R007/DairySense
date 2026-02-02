@@ -281,6 +281,25 @@ export async function getCowsList(date = null) {
 }
 
 /**
+ * Calculates 7-day average feed intake for a cow
+ */
+async function calculateSevenDayFeedAverage(cowId, targetDate) {
+  const sevenDaysAgo = new Date(targetDate);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // Include today + 6 previous days
+  
+  const result = await pool.query(`
+    SELECT AVG(COALESCE(feed_given_kg, 0)) as avg_feed
+    FROM daily_lane_log
+    WHERE cow_id = $1 
+      AND date >= $2 
+      AND date <= $3
+  `, [cowId, sevenDaysAgo.toISOString().split('T')[0], targetDate]);
+  
+  const avg = result.rows[0]?.avg_feed;
+  return avg ? parseFloat(avg) : 0;
+}
+
+/**
  * Gets detailed cow information with trend data
  */
 export async function getCowDetail(cowId, date = null) {
@@ -313,8 +332,32 @@ export async function getCowDetail(cowId, date = null) {
     feed: parseFloat(todayResult.rows[0]?.feed || 0)
   };
   
-  // Calculate 7-day average
-  const sevenDayAvg = await calculateSevenDayAverage(cowId, targetDate);
+  // Calculate 7-day averages
+  const sevenDayAvgMilk = await calculateSevenDayAverage(cowId, targetDate);
+  const sevenDayAvgFeed = await calculateSevenDayFeedAverage(cowId, targetDate);
+  
+  // Get last 7 days historical data for analytics calculations
+  const sevenDaysAgo = new Date(targetDate);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+  
+  const sevenDayHistoryResult = await pool.query(`
+    SELECT 
+      date,
+      COALESCE(SUM(feed_given_kg), 0) as feed,
+      COALESCE(SUM(total_yield_l), 0) as milk
+    FROM daily_lane_log
+    WHERE cow_id = $1 
+      AND date >= $2
+      AND date <= $3
+    GROUP BY date
+    ORDER BY date ASC
+  `, [cowId, sevenDaysAgo.toISOString().split('T')[0], targetDate]);
+  
+  const sevenDayHistory = sevenDayHistoryResult.rows.map(row => ({
+    date: row.date.toISOString().split('T')[0],
+    milk: parseFloat(row.milk || 0),
+    feed: parseFloat(row.feed || 0)
+  }));
   
   // Get yield trend (last 14 days)
   const fourteenDaysAgo = new Date(targetDate);
@@ -342,7 +385,9 @@ export async function getCowDetail(cowId, date = null) {
     cowId: cow.cow_id,
     tagId: cow.rfid_uid || cow.cow_id,
     today,
-    sevenDayAverage: parseFloat(sevenDayAvg.toFixed(2)),
+    sevenDayAverage: parseFloat(sevenDayAvgMilk.toFixed(2)),
+    sevenDayAverageFeed: parseFloat(sevenDayAvgFeed.toFixed(2)),
+    sevenDayHistory,
     yieldTrend
   };
 }

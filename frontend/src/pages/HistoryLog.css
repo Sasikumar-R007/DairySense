@@ -1,9 +1,11 @@
-/* History Log Styles */
+@import '../styles/theme.css';
 
 .history-log {
   min-height: 100vh;
-  background: linear-gradient(to bottom, #fff9e6 0%, #f5f5f0 100%);
-  padding: 1rem;
+  background: var(--bg-secondary);
+  padding: 1rem 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .history-header {
@@ -16,10 +18,11 @@
 }
 
 .history-header h1 {
-  font-size: 1.75rem;
-  color: #6b5b2e;
+  font-size: 1.5rem;
+  color: var(--text-primary);
   margin: 0;
   flex: 1;
+  font-weight: 600;
 }
 
 .history-filters {
@@ -31,7 +34,7 @@
 
 .date-range-section {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
   align-items: flex-end;
 }
@@ -49,50 +52,64 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: #6b5b2e;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
+.date-input-group label svg {
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+}
+
 .date-input {
-  padding: 0.75rem;
-  border: 2px solid #d4a574;
-  border-radius: 8px;
-  background: #fff;
-  color: #6b5b2e;
-  font-size: 0.9rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.875rem;
   cursor: pointer;
+  transition: border-color var(--transition-base);
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: var(--primary);
 }
 
 .refresh-btn {
-  padding: 0.75rem 1.5rem;
-  background: #d4a574;
-  color: #fff;
+  padding: 0.625rem 1rem;
+  background: var(--primary);
+  color: white;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: var(--radius-md);
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color var(--transition-base);
   white-space: nowrap;
+  font-size: 0.875rem;
 }
 
 .refresh-btn:hover {
-  background: #b88652;
-  transform: translateY(-1px);
+  background: var(--primary-dark);
 }
 
 .search-box {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: #fff;
+  background: var(--bg-primary);
   padding: 0.75rem 1rem;
-  border-radius: 10px;
-  border: 2px solid #d4a574;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
 }
 
 .search-box svg {
-  color: #8b7355;
+  color: var(--text-secondary);
   flex-shrink: 0;
+  width: 18px;
+  height: 18px;
 }
 
 .search-input {
@@ -100,47 +117,59 @@
   border: none;
   outline: none;
   background: transparent;
-  color: #6b5b2e;
-  font-size: 1rem;
+  color: var(--text-primary);
+  font-size: 0.875rem;
 }
 
 .search-input::placeholder {
-  color: #a8a095;
+  color: var(--text-tertiary);
 }
 
 .error-banner {
-  background: #ffe6e6;
-  border: 2px solid #e67e22;
-  border-radius: 8px;
-  padding: 1rem;
+  background: var(--error-light);
+  border: 1px solid var(--error);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
   margin-bottom: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+.error-banner p {
+  color: var(--error);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
 .error-banner button {
   padding: 0.5rem 1rem;
-  background: #e67e22;
-  color: #fff;
+  background: var(--error);
+  color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: background-color var(--transition-base);
+}
+
+.error-banner button:hover {
+  background: #dc2626;
 }
 
 .history-table-container {
-  background: #fff;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(107, 91, 46, 0.1);
-  border: 1px solid #e8dcc0;
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
 }
 
 .table-info {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   font-size: 0.875rem;
-  color: #8b7355;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -155,29 +184,29 @@
 }
 
 .history-table thead {
-  background: linear-gradient(135deg, #fff9e6 0%, #fff8e6 100%);
+  background: var(--bg-tertiary);
 }
 
 .history-table th {
-  padding: 1rem;
+  padding: 0.75rem;
   text-align: left;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #6b5b2e;
+  color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid #d4a574;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .history-table td {
-  padding: 0.875rem 1rem;
-  border-bottom: 1px solid #e8dcc0;
-  color: #6b5b2e;
-  font-size: 0.9rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-primary);
+  font-size: 0.875rem;
 }
 
 .history-table tbody tr:hover {
-  background: #fff9e6;
+  background: var(--bg-secondary);
 }
 
 .history-table tbody tr:last-child td {
@@ -186,13 +215,14 @@
 
 .cow-id-cell {
   font-weight: 600;
-  color: #6b5b2e;
+  color: var(--primary);
 }
 
 .empty-state {
   text-align: center;
   padding: 3rem 1rem;
-  color: #8b7355;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
 }
 
 .loading-container {
@@ -204,21 +234,52 @@
   gap: 1rem;
 }
 
+.loading-container p {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
 .loading-spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid #e8dcc0;
-  border-top-color: #d4a574;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-light);
+  border-top-color: var(--primary);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: border-color var(--transition-base), background-color var(--transition-base);
+}
+
+.back-button:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-medium);
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
+  .history-log {
+    padding: 0.75rem 1rem;
+  }
+
   .date-range-section {
     flex-direction: column;
   }
@@ -236,12 +297,11 @@
   }
 
   .history-table {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
   }
 
   .history-table th,
   .history-table td {
-    padding: 0.75rem 0.5rem;
+    padding: 0.625rem 0.5rem;
   }
 }
-

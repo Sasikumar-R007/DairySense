@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "seed": "node scripts/seedSampleData.js",
+    "seed:remove": "node scripts/removeSampleData.js"
   },
   "dependencies": {
     "express": "^4.18.2",

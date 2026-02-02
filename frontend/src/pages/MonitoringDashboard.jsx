@@ -91,7 +91,7 @@ function MonitoringDashboard() {
             onClick={() => navigate('/settings')}
             aria-label="Settings"
           >
-            <Settings size={24} />
+            <Settings size={20} />
           </button>
           <button 
             className="logout-btn"
@@ -102,11 +102,35 @@ function MonitoringDashboard() {
         </div>
       </header>
 
-      {/* Date Filter Section */}
+      {/* Date Filter Section with Action Buttons */}
       <div className="date-filter-section">
-        <div className="date-filter-card">
-          <Calendar size={20} className="date-icon" />
-          <label htmlFor="date-input">Select Date</label>
+        <div className="action-buttons-row">
+          <button 
+            className="action-btn-modern"
+            onClick={() => navigate('/monitoring/cows')}
+          >
+            <BarChart3 size={18} />
+            <span>View Cow Performance</span>
+          </button>
+
+          <button 
+            className="action-btn-modern"
+            onClick={() => navigate('/monitoring/summary')}
+          >
+            <Calendar size={18} />
+            <span>Daily Report</span>
+          </button>
+
+          <button 
+            className="action-btn-modern"
+            onClick={() => navigate('/monitoring/history')}
+          >
+            <History size={18} />
+            <span>History</span>
+          </button>
+        </div>
+        <div className="date-input-wrapper">
+          <Calendar size={18} className="date-icon" />
           <input 
             id="date-input"
             type="date" 
@@ -121,7 +145,7 @@ function MonitoringDashboard() {
       <div className="dashboard-cards-modern">
         <div className="stat-card-modern">
           <div className="card-icon-modern users-icon-modern">
-            <Users size={28} />
+            <Users size={22} />
           </div>
           <div className="card-content-modern">
             <h3>Total Cows</h3>
@@ -131,7 +155,7 @@ function MonitoringDashboard() {
 
         <div className="stat-card-modern">
           <div className="card-icon-modern milk-icon-modern">
-            <Milk size={28} />
+            <Milk size={22} />
           </div>
           <div className="card-content-modern">
             <h3>Today's Milk Yield</h3>
@@ -141,7 +165,7 @@ function MonitoringDashboard() {
 
         <div className="stat-card-modern">
           <div className="card-icon-modern feed-icon-modern">
-            <Utensils size={28} />
+            <Utensils size={22} />
           </div>
           <div className="card-content-modern">
             <h3>Today's Feed</h3>
@@ -151,7 +175,7 @@ function MonitoringDashboard() {
 
         <div className="stat-card-modern">
           <div className="card-icon-modern ratio-icon-modern">
-            <TrendingUp size={28} />
+            <TrendingUp size={22} />
           </div>
           <div className="card-content-modern">
             <h3>Yield-to-Feed Ratio</h3>
@@ -161,7 +185,7 @@ function MonitoringDashboard() {
 
         <div className="stat-card-modern alert-card-modern">
           <div className="card-icon-modern alert-icon-modern">
-            <AlertTriangle size={28} />
+            <AlertTriangle size={22} />
           </div>
           <div className="card-content-modern">
             <h3>Low Yield Cows</h3>
@@ -171,40 +195,13 @@ function MonitoringDashboard() {
         </div>
       </div>
 
-      {/* Action Buttons Row */}
-      <div className="action-buttons-row">
-        <button 
-          className="action-btn-modern"
-          onClick={() => navigate('/monitoring/cows')}
-        >
-          <BarChart3 size={24} />
-          <span>View Cow Performance</span>
-        </button>
-
-        <button 
-          className="action-btn-modern"
-          onClick={() => navigate('/monitoring/summary')}
-        >
-          <Calendar size={24} />
-          <span>Daily Report</span>
-        </button>
-
-        <button 
-          className="action-btn-modern"
-          onClick={() => navigate('/monitoring/history')}
-        >
-          <History size={24} />
-          <span>History</span>
-        </button>
-      </div>
-
       {/* Record Management Button */}
       <div className="record-management-section">
         <button 
           className="record-mgmt-btn"
           onClick={() => navigate('/dashboard')}
         >
-          <Database size={24} />
+          <Database size={18} />
           <span>Open Record Management</span>
         </button>
       </div>

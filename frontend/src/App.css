@@ -1,3 +1,5 @@
+@import './styles/theme.css';
+
 * {
   margin: 0;
   padding: 0;
@@ -10,10 +12,65 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Modern Loading Animation - Dots */
+.loading-spinner {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-spinner::before,
+.loading-spinner::after,
+.loading-spinner {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #667eea;
+  animation: loading-dots 1.4s ease-in-out infinite;
+}
+
+.loading-spinner::before {
+  animation-delay: -0.32s;
+}
+
+.loading-spinner::after {
+  animation-delay: -0.16s;
+}
+
+@keyframes loading-dots {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Alternative: Smooth spinner for legacy support */
+.loading-spinner-classic {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(102, 126, 234, 0.2);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 

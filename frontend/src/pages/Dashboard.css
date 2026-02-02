@@ -1,13 +1,16 @@
+@import '../styles/theme.css';
+
 .dashboard {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--bg-secondary);
 }
 
 .dashboard-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 20px 0;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
 }
 
 .header-content {
@@ -24,26 +27,28 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 1.2rem;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   font-weight: 500;
-  transition: all 0.3s;
+  transition: border-color var(--transition-base), background-color var(--transition-base);
 }
 
 .back-to-monitoring-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateX(-3px);
+  background: var(--bg-tertiary);
+  border-color: var(--border-medium);
 }
 
 .dashboard-header h1 {
-  font-size: 28px;
+  font-size: 1.5rem;
   margin: 0;
   flex: 1;
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .header-actions {
@@ -58,18 +63,19 @@
 }
 
 .logout-button {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--text-secondary);
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 8px 20px;
-  border-radius: 6px;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 14px;
-  transition: background 0.3s;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color var(--transition-base);
 }
 
 .logout-button:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--text-primary);
 }
 
 .dashboard-nav {
@@ -86,24 +92,24 @@
 .nav-button {
   background: none;
   border: none;
-  padding: 15px 25px;
-  font-size: 16px;
-  color: #666;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
   cursor: pointer;
-  border-bottom: 3px solid transparent;
-  transition: all 0.3s;
+  border-bottom: 2px solid transparent;
+  transition: color var(--transition-base), border-color var(--transition-base);
   white-space: nowrap;
 }
 
 .nav-button:hover {
-  color: #667eea;
-  background-color: #f5f7fa;
+  color: var(--primary);
+  background-color: var(--bg-secondary);
 }
 
 .nav-button.active {
-  color: #667eea;
-  border-bottom-color: #667eea;
-  font-weight: 600;
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  font-weight: 500;
 }
 
 /* Modern Action Buttons */
@@ -119,20 +125,20 @@
 .action-button-modern {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 2rem;
-  background: white;
-  border: 2px solid #e9ecef;
-  border-radius: 16px;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: border-color var(--transition-base), background-color var(--transition-base);
+  box-shadow: var(--shadow-sm);
   text-align: left;
 }
 
 .action-button-modern:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  border-color: var(--border-medium);
+  background: var(--bg-secondary);
 }
 
 .action-button-modern svg {
@@ -144,32 +150,18 @@
   transition: all 0.3s;
 }
 
-.cows-list-button-modern {
-  border-color: #2196f3;
-}
-
-.cows-list-button-modern:hover {
-  border-color: #1976d2;
-  background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);
-}
-
 .cows-list-button-modern svg {
-  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  background: var(--primary);
   color: white;
-}
-
-.add-cow-button-modern {
-  border-color: #4caf50;
-}
-
-.add-cow-button-modern:hover {
-  border-color: #45a049;
-  background: linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%);
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
 }
 
 .add-cow-button-modern svg {
-  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  background: var(--success);
   color: white;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
 }
 
 .button-text {
@@ -180,15 +172,15 @@
 }
 
 .button-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #2c3e50;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .button-subtitle {
-  font-size: 0.9rem;
-  color: #6c757d;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
   margin: 0;
 }
 

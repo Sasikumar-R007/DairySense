@@ -151,12 +151,13 @@
 }
 
 .loading-spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid #e8dcc0;
-  border-top-color: #d4a574;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-light);
+  border-top-color: var(--primary);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
 }
 
 @keyframes spin {
@@ -171,6 +172,287 @@
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
+}
+
+/* Analytics Section */
+.analytics-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.analytics-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(107, 91, 46, 0.1);
+  border: 1px solid #e8dcc0;
+}
+
+.analytics-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e8dcc0;
+}
+
+.analytics-header h3 {
+  font-size: 1.125rem;
+  color: #6b5b2e;
+  margin: 0;
+  font-weight: 600;
+}
+
+.analytics-icon {
+  color: #6b8e6b;
+}
+
+.analytics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Health Monitoring Styles */
+.health-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background: #f9f9f5;
+}
+
+.health-status.normal {
+  background: #f0f7f0;
+  border-left: 4px solid #6b8e6b;
+}
+
+.health-status.warning {
+  background: #fff9e6;
+  border-left: 4px solid #d4a574;
+}
+
+.health-status.caution {
+  background: #ffe6e6;
+  border-left: 4px solid #d47474;
+}
+
+.status-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.status-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #6b5b2e;
+}
+
+.status-reason {
+  font-size: 0.875rem;
+  color: #8b7355;
+  line-height: 1.4;
+}
+
+.health-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #f9f9f5;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: #8b7355;
+  line-height: 1.4;
+}
+
+.health-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Digestive Efficiency Styles */
+.fce-display {
+  text-align: center;
+  padding: 1rem;
+  background: #f9f9f5;
+  border-radius: 8px;
+}
+
+.fce-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.fce-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #6b5b2e;
+  line-height: 1;
+}
+
+.fce-unit {
+  font-size: 1.25rem;
+  color: #8b7355;
+  font-weight: 500;
+}
+
+.fce-label {
+  font-size: 0.875rem;
+  color: #8b7355;
+  font-weight: 500;
+}
+
+.fce-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.fce-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e8dcc0;
+}
+
+.fce-stat-label {
+  font-size: 0.875rem;
+  color: #8b7355;
+}
+
+.fce-stat-value {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #6b5b2e;
+}
+
+.fce-efficiency {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.fce-efficiency.good {
+  background: #f0f7f0;
+  color: #4a6b4a;
+}
+
+.fce-efficiency.fair {
+  background: #fff9e6;
+  color: #8b7355;
+}
+
+.fce-efficiency.poor {
+  background: #ffe6e6;
+  color: #8b4a4a;
+}
+
+/* Heat Pattern Detection Styles */
+.heat-detected {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  background: #fff9e6;
+  border-radius: 8px;
+  border-left: 4px solid #d4a574;
+}
+
+.heat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.heat-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #6b5b2e;
+}
+
+.heat-confidence {
+  font-size: 0.8125rem;
+  color: #8b7355;
+  font-style: italic;
+}
+
+.heat-normal {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f0f7f0;
+  border-radius: 8px;
+  color: #4a6b4a;
+  font-weight: 500;
+}
+
+.heat-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #f9f9f5;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: #8b7355;
+  line-height: 1.4;
+}
+
+.heat-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Movement Tracking Disabled Styles */
+.movement-card.disabled {
+  opacity: 0.7;
+  background: #f9f9f5;
+}
+
+.movement-disabled {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  text-align: center;
+  gap: 1rem;
+}
+
+.disabled-icon {
+  color: #c0c0c0;
+}
+
+.disabled-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #8b7355;
+  margin: 0;
+}
+
+.disabled-description {
+  font-size: 0.875rem;
+  color: #8b7355;
+  line-height: 1.5;
+  margin: 0;
 }
 
 /* Mobile Responsive */
@@ -194,6 +476,21 @@
 
   .stat-value-large {
     font-size: 1.5rem;
+  }
+
+  .analytics-section {
+    grid-template-columns: 1fr;
+  }
+
+  .fce-number {
+    font-size: 2rem;
+  }
+
+  .health-status,
+  .heat-detected,
+  .heat-normal {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 
