@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { RefreshCw } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { cowsAPI } from '../services/cowsAPI';
 import './CowPublicProfile.css';
@@ -126,7 +127,13 @@ function CowPublicProfile() {
     return (
       <div className="cow-public-profile">
         <div className="public-profile-container">
-          <div className="loading-spinner">Loading...</div>
+          <div className="loading-container">
+            <div className="loading-spinner">
+              <div className="loading-dot"></div>
+              <div className="loading-dot"></div>
+              <div className="loading-dot"></div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -258,7 +265,8 @@ function CowPublicProfile() {
                 }}
                 className="scan-another-button"
               >
-                🔄 Scan Another Cow
+                <RefreshCw size={16} style={{ marginRight: '0.5rem' }} />
+                Scan Another Cow
               </button>
             </div>
 

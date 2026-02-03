@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, CheckCircle, Link as LinkIcon, RefreshCw, BarChart3 } from 'lucide-react';
 import { cowsAPI } from '../services/cowsAPI';
 import './AddCow.css';
 
@@ -285,8 +286,9 @@ function AddCow() {
       <div className="add-cow-card">
         <div className="page-header">
           <h2>Add New Cow</h2>
-          <button onClick={() => navigate('/dashboard')} className="back-button">
-            ← Back to Dashboard
+          <button onClick={() => navigate(-1)} className="back-button">
+            <ArrowLeft size={20} />
+            <span>Back</span>
           </button>
         </div>
 
@@ -298,7 +300,7 @@ function AddCow() {
 
         {qrCodeData ? (
           <div className="qr-success-section">
-            <div className="success-icon">✅</div>
+            <CheckCircle size={48} className="success-icon" style={{ color: '#10b981' }} />
             <h3>Cow Added Successfully!</h3>
             <p>Cow ID: <strong>{qrCodeData.cowId}</strong></p>
             
@@ -309,7 +311,10 @@ function AddCow() {
             {/* RFID Linking Step */}
             {rfidLinkingState.step !== 'none' && (
               <div className="rfid-linking-section" style={{ marginTop: '30px', padding: '20px', border: '2px solid #667eea', borderRadius: '8px', backgroundColor: '#f8f9ff' }}>
-                <h4 style={{ marginTop: 0, color: '#667eea' }}>🔗 Link RFID Tag</h4>
+                <h4 style={{ marginTop: 0, color: '#667eea', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <LinkIcon size={20} />
+                  Link RFID Tag
+                </h4>
                 
                 {rfidLinkingState.step === 'waiting' && (
                   <div className="waiting-rfid">
@@ -361,7 +366,8 @@ function AddCow() {
                   <div className="found-rfid">
                     <div style={{ marginBottom: '15px' }}>
                       <span style={{ fontSize: '1.1em', fontWeight: 'bold', color: '#28a745' }}>
-                        ✅ RFID Tag Detected: <strong>{rfidLinkingState.pendingRfid}</strong>
+                        <CheckCircle size={18} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.5rem', color: '#10b981' }} />
+                        RFID Tag Detected: <strong>{rfidLinkingState.pendingRfid}</strong>
                       </span>
                     </div>
                     <button 
@@ -452,7 +458,8 @@ function AddCow() {
                 {rfidLinkingState.step === 'linked' && (
                   <div className="linked-rfid" style={{ padding: '15px', background: '#d4edda', borderRadius: '4px', border: '1px solid #c3e6cb' }}>
                     <span style={{ fontSize: '1.1em', fontWeight: 'bold', color: '#155724' }}>
-                      ✅ RFID Tag Successfully Linked!
+                      <CheckCircle size={20} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.5rem', color: '#10b981' }} />
+                      RFID Tag Successfully Linked!
                     </span>
                   </div>
                 )}
@@ -495,7 +502,8 @@ function AddCow() {
                 onClick={() => navigate('/dashboard')} 
                 className="dashboard-button"
               >
-                📊 Go to Dashboard
+                <BarChart3 size={18} style={{ marginRight: '0.5rem' }} />
+                Go to Dashboard
               </button>
             </div>
           </div>
@@ -521,7 +529,12 @@ function AddCow() {
                     disabled={generatingId}
                     className="generate-button"
                   >
-                    {generatingId ? 'Generating...' : '🔄 Regenerate'}
+                    {generatingId ? 'Generating...' : (
+                      <>
+                        <RefreshCw size={16} style={{ marginRight: '0.5rem' }} />
+                        Regenerate
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

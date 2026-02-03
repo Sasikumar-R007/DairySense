@@ -305,9 +305,11 @@ async function calculateSevenDayFeedAverage(cowId, targetDate) {
 export async function getCowDetail(cowId, date = null) {
   const targetDate = date || getTodayDateString();
   
-  // Get cow basic info
+  // Get cow basic info with all details
   const cowResult = await pool.query(`
-    SELECT cow_id, rfid_uid, name
+    SELECT cow_id, rfid_uid, name, cow_type, breed, date_of_birth, 
+           purchase_date, last_vaccination_date, next_vaccination_date, 
+           number_of_calves, status, notes, created_at, updated_at
     FROM cows
     WHERE cow_id = $1
   `, [cowId]);
@@ -384,6 +386,18 @@ export async function getCowDetail(cowId, date = null) {
   return {
     cowId: cow.cow_id,
     tagId: cow.rfid_uid || cow.cow_id,
+    name: cow.name,
+    cowType: cow.cow_type,
+    breed: cow.breed,
+    dateOfBirth: cow.date_of_birth,
+    purchaseDate: cow.purchase_date,
+    lastVaccinationDate: cow.last_vaccination_date,
+    nextVaccinationDate: cow.next_vaccination_date,
+    numberOfCalves: cow.number_of_calves,
+    status: cow.status,
+    notes: cow.notes,
+    createdAt: cow.created_at,
+    updatedAt: cow.updated_at,
     today,
     sevenDayAverage: parseFloat(sevenDayAvgMilk.toFixed(2)),
     sevenDayAverageFeed: parseFloat(sevenDayAvgFeed.toFixed(2)),

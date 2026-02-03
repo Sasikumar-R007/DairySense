@@ -168,7 +168,11 @@ function MonitoringCowDetail() {
     return (
       <div className="monitoring-cow-detail">
         <div className="loading-container">
-          <div className="loading-spinner"></div>
+          <div className="loading-spinner">
+            <div className="loading-dot"></div>
+            <div className="loading-dot"></div>
+            <div className="loading-dot"></div>
+          </div>
           <p>Loading cow details...</p>
         </div>
       </div>
@@ -181,7 +185,7 @@ function MonitoringCowDetail() {
         <header className="cow-detail-header">
           <button 
             className="back-button" 
-            onClick={() => navigate('/monitoring/cows')}
+            onClick={() => navigate(-1)}
           >
             <ArrowLeft size={20} />
             <span>Back</span>
@@ -227,9 +231,93 @@ function MonitoringCowDetail() {
               <span className="info-value">{data.cowId}</span>
             </div>
             <div className="info-item">
-              <span className="info-label">Tag ID</span>
-              <span className="info-value">{data.tagId}</span>
+              <span className="info-label">RFID Tag ID</span>
+              <span className="info-value">{data.tagId || 'N/A'}</span>
             </div>
+            {data.name && (
+              <div className="info-item">
+                <span className="info-label">Name</span>
+                <span className="info-value">{data.name}</span>
+              </div>
+            )}
+            {data.cowType && (
+              <div className="info-item">
+                <span className="info-label">Cow Type</span>
+                <span className="info-value">{data.cowType}</span>
+              </div>
+            )}
+            {data.status && (
+              <div className="info-item">
+                <span className="info-label">Status</span>
+                <span className="info-value" data-status={data.status.toLowerCase()}>{data.status}</span>
+              </div>
+            )}
+            {data.breed && (
+              <div className="info-item">
+                <span className="info-label">Breed</span>
+                <span className="info-value">{data.breed}</span>
+              </div>
+            )}
+            {data.dateOfBirth && (
+              <div className="info-item">
+                <span className="info-label">Date of Birth</span>
+                <span className="info-value">
+                  {new Date(data.dateOfBirth).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+            {data.purchaseDate && (
+              <div className="info-item">
+                <span className="info-label">Purchase Date</span>
+                <span className="info-value">
+                  {new Date(data.purchaseDate).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+            {data.numberOfCalves !== undefined && data.numberOfCalves !== null && (
+              <div className="info-item">
+                <span className="info-label">Number of Calves</span>
+                <span className="info-value">{data.numberOfCalves}</span>
+              </div>
+            )}
+            {data.lastVaccinationDate && (
+              <div className="info-item">
+                <span className="info-label">Last Vaccination</span>
+                <span className="info-value">
+                  {new Date(data.lastVaccinationDate).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+            {data.nextVaccinationDate && (
+              <div className="info-item">
+                <span className="info-label">Next Vaccination</span>
+                <span className="info-value">
+                  {new Date(data.nextVaccinationDate).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+            {data.createdAt && (
+              <div className="info-item">
+                <span className="info-label">Registered On</span>
+                <span className="info-value">
+                  {new Date(data.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+            {data.updatedAt && (
+              <div className="info-item">
+                <span className="info-label">Last Updated</span>
+                <span className="info-value">
+                  {new Date(data.updatedAt).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+            {data.notes && (
+              <div className="info-item" style={{ gridColumn: '1 / -1' }}>
+                <span className="info-label">Notes</span>
+                <span className="info-value">{data.notes}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -264,10 +352,10 @@ function MonitoringCowDetail() {
           {data.yieldTrend && data.yieldTrend.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={data.yieldTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e8dcc0" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" />
                 <XAxis 
                   dataKey="date" 
-                  stroke="#8b7355"
+                  stroke="var(--text-secondary)"
                   tick={{ fontSize: 12 }}
                   tickFormatter={(value) => {
                     const date = new Date(value);
@@ -275,14 +363,14 @@ function MonitoringCowDetail() {
                   }}
                 />
                 <YAxis 
-                  stroke="#8b7355"
+                  stroke="var(--text-secondary)"
                   tick={{ fontSize: 12 }}
-                  label={{ value: 'Milk (L)', angle: -90, position: 'insideLeft', style: { fill: '#6b5b2e' } }}
+                  label={{ value: 'Milk (L)', angle: -90, position: 'insideLeft', style: { fill: 'var(--text-primary)' } }}
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: '#fff9e6', 
-                    border: '1px solid #d4a574',
+                    backgroundColor: 'var(--bg-primary)', 
+                    border: '1px solid var(--border-light)',
                     borderRadius: '8px'
                   }}
                   labelFormatter={(value) => {
@@ -294,9 +382,9 @@ function MonitoringCowDetail() {
                 <Line 
                   type="monotone" 
                   dataKey="milk" 
-                  stroke="#6b8e6b" 
+                  stroke="var(--primary)" 
                   strokeWidth={2}
-                  dot={{ fill: '#d4a574', r: 4 }}
+                  dot={{ fill: 'var(--primary)', r: 4 }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>

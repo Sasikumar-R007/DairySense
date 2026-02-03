@@ -81,7 +81,7 @@ function Settings() {
       <header className="settings-header">
         <button 
           className="back-button"
-          onClick={() => navigate('/monitoring')}
+          onClick={() => navigate(-1)}
         >
           <ArrowLeft size={20} />
           <span>Back</span>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Search } from 'lucide-react';
 import { dailyLaneLogAPI } from '../services/api';
 import { cowsAPI } from '../services/cowsAPI';
 import { getFeedSuggestion } from '../utils/feedSuggestions';

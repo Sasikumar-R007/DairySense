@@ -1,5 +1,6 @@
 /* Professional Monitoring Dashboard Styles */
 @import '../styles/theme.css';
+@import '../styles/loading.css';
 
 .monitoring-dashboard {
   min-height: 100vh;
@@ -300,8 +301,7 @@
   flex-shrink: 0;
 }
 
-/* Loading & Error States */
-.loading-container,
+/* Error States */
 .error-container {
   display: flex;
   flex-direction: column;
@@ -309,26 +309,6 @@
   justify-content: center;
   min-height: 50vh;
   gap: 1rem;
-}
-
-.loading-container p {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  margin: 0;
-}
-
-.loading-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border-light);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-  display: inline-block;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 .error-container button {

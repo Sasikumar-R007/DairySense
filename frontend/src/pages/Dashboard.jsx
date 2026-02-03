@@ -23,11 +23,11 @@ function Dashboard() {
         <div className="header-content">
           <button 
             className="back-to-monitoring-btn"
-            onClick={() => navigate('/monitoring')}
+            onClick={() => navigate(-1)}
             aria-label="Back to Monitoring Dashboard"
           >
             <ArrowLeft size={20} />
-            <span>Back to Monitoring</span>
+            <span>Back</span>
           </button>
           <h1>Record Management</h1>
           <div className="header-actions">

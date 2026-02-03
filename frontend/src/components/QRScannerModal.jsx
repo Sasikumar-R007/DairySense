@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
+import { CheckCircle, FileText } from 'lucide-react';
 import { cowsAPI } from '../services/cowsAPI';
 import { getFeedSuggestion } from '../utils/feedSuggestions';
 import './QRScannerModal.css';
@@ -220,7 +221,10 @@ function QRScannerModal({ isOpen, onClose, onScanSuccess }) {
             </>
           ) : (
             <div className="cow-details-display">
-              <div className="success-badge">✅ Cow Found</div>
+              <div className="success-badge">
+                <CheckCircle size={18} style={{ marginRight: '0.5rem', display: 'inline', verticalAlign: 'middle' }} />
+                Cow Found
+              </div>
               
               <div className="cow-info-grid">
                 <div className="info-item">
@@ -258,7 +262,8 @@ function QRScannerModal({ isOpen, onClose, onScanSuccess }) {
                   onClick={handleShowFullDetails}
                   className="full-details-button"
                 >
-                  📋 Show Full Details
+                  <FileText size={16} style={{ marginRight: '0.5rem' }} />
+                  Show Full Details
                 </button>
                 <button
                   onClick={handleClose}

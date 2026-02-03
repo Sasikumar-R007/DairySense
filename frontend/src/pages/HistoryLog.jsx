@@ -70,7 +70,11 @@ function HistoryLog() {
     return (
       <div className="history-log">
         <div className="loading-container">
-          <div className="loading-spinner"></div>
+          <div className="loading-spinner">
+            <div className="loading-dot"></div>
+            <div className="loading-dot"></div>
+            <div className="loading-dot"></div>
+          </div>
           <p>Loading history...</p>
         </div>
       </div>
@@ -82,7 +86,7 @@ function HistoryLog() {
       <header className="history-header">
         <button 
           className="back-button" 
-          onClick={() => navigate('/monitoring')}
+          onClick={() => navigate(-1)}
         >
           <ArrowLeft size={20} />
           <span>Back</span>

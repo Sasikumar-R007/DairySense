@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Edit } from 'lucide-react';
 import { cowsAPI } from '../services/cowsAPI';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './CowDetails.css';
@@ -154,14 +155,16 @@ function CowDetails() {
       <div className="cow-details-card">
         <div className="page-header">
           <div>
-            <button onClick={() => navigate('/cows')} className="back-button">
-              ← Back to Cows List
+            <button onClick={() => navigate(-1)} className="back-button">
+              <ArrowLeft size={20} />
+              <span>Back</span>
             </button>
             <h2>Cow Details: {cow.cow_id}</h2>
           </div>
           {!editing && (
             <button onClick={handleEdit} className="edit-button">
-              ✏️ Edit Details
+              <Edit size={18} />
+              <span>Edit Details</span>
             </button>
           )}
         </div>

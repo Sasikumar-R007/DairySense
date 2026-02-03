@@ -1,4 +1,5 @@
 @import '../styles/theme.css';
+@import '../styles/loading.css';
 
 .monitoring-cow-list {
   min-height: 100vh;
@@ -255,33 +256,125 @@
   font-size: 0.875rem;
 }
 
-.loading-container {
+.performance-download-section {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.download-performance-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-base);
+}
+
+.download-performance-btn:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.download-performance-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal styles (shared with DailySummary) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 50vh;
-  gap: 1rem;
+  z-index: 1000;
 }
 
-.loading-container p {
-  color: var(--text-secondary);
+.download-modal {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: var(--shadow-lg);
+}
+
+.download-modal h3 {
+  margin: 0 0 1rem 0;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.download-preview {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.download-preview p {
+  margin: 0.5rem 0;
+  color: var(--text-primary);
   font-size: 0.875rem;
-  margin: 0;
 }
 
-.loading-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border-light);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-  display: inline-block;
+.download-preview .modal-note {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-style: italic;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.cancel-btn,
+.confirm-download-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cancel-btn {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+}
+
+.cancel-btn:hover {
+  background: var(--bg-tertiary);
+}
+
+.confirm-download-btn {
+  background: var(--primary);
+  color: #fff;
+}
+
+.confirm-download-btn:hover {
+  background: var(--primary-dark);
 }
 
 .back-button {

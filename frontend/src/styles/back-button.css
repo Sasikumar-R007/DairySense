@@ -1,0 +1,47 @@
+/* Unified Back Button Styles */
+@import './theme.css';
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-decoration: none;
+  width: fit-content;
+}
+
+.back-button:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+}
+
+.back-button svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.back-button span {
+  line-height: 1;
+}
+
+/* Header alignment fix */
+header .back-button,
+.summary-header .back-button,
+.cow-detail-header .back-button,
+.history-header .back-button,
+.settings-header .back-button,
+.cow-list-header .back-button {
+  align-self: center;
+  margin: 0;
+}
+
