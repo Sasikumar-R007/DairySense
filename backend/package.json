@@ -6,6 +6,7 @@
     "dev": "node --watch server.js",
     "start": "node server.js",
     "seed": "node scripts/seedSampleData.js",
+    "seed:5days": "node scripts/seed5DaysData.js",
     "seed:remove": "node scripts/removeSampleData.js"
   },
   "dependencies": {

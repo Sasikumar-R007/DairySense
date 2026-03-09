@@ -8,13 +8,33 @@ import {
   recordFeed,
   recordMilkYield,
   getTodayLogs,
-  getTodayEntryForCowLane
+  getTodayEntryForCowLane,
+  handleEsp32Scan
 } from '../services/dailyLaneLogService.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// All routes require authentication
+// TEMPORARY: ESP32 scan endpoint without authentication (for hardware testing)
+// TODO: Re-enable authentication after ESP JWT implementation
+router.post('/esp32-scan', async (req, res) => {
+  try {
+    const { rfid_uid, operation } = req.body;
+    
+    if (!rfid_uid) {
+      return res.status(400).json({ error: 'rfid_uid is required' });
+    }
+    
+    const result = await handleEsp32Scan(rfid_uid, operation || 'feed');
+    
+    res.json({ data: result });
+  } catch (error) {
+    console.error('Error handling ESP32 scan:', error);
+    res.status(404).json({ error: error.message });
+  }
+});
+
+// All other routes require authentication
 router.use(authenticateToken);
 
 // Record feed (Flow A)

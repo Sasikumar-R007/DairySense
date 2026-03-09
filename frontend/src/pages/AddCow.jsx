@@ -115,16 +115,24 @@ function AddCow() {
     
     const poll = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/cows/rfid/pending`);
+        const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/cows/rfid/pending`;
+        console.log('[RFID Polling] Fetching:', apiUrl);
+        
+        const response = await fetch(apiUrl);
         const data = await response.json();
+        
+        console.log('[RFID Polling] Response:', data);
+        console.log('[RFID Polling] Pending scans count:', data.data?.length || 0);
         
         if (data.data && data.data.length > 0) {
           // Get the most recent pending scan
           const latestScan = data.data[0];
+          console.log('[RFID Polling] Latest scan detected:', latestScan);
           
           setRfidLinkingState(prev => {
             // Only update if still in waiting or found state
             if (prev.step === 'waiting' || prev.step === 'found') {
+              console.log('[RFID Polling] Updating state to found');
               // Stop polling
               if (pollingRef.current) {
                 clearInterval(pollingRef.current);
@@ -145,9 +153,11 @@ function AddCow() {
             }
             return prev;
           });
+        } else {
+          console.log('[RFID Polling] No pending scans found');
         }
       } catch (error) {
-        console.error('Error polling for RFID:', error);
+        console.error('[RFID Polling] Error:', error);
       }
     };
     

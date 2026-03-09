@@ -220,3 +220,117 @@ export async function getTodayLogs() {
   return result.rows;
 }
 
+/**
+ * Gets the next available lane number for today
+ * Returns the lowest lane number that doesn't have a cow assigned today
+ * If all lanes 1-50 are used, returns the next sequential number
+ */
+export async function getNextAvailableLane() {
+  const today = getTodayDateString();
+  
+  // Get all lanes used today, ordered by lane number
+  const result = await pool.query(
+    `SELECT DISTINCT lane_no 
+     FROM daily_lane_log 
+     WHERE date = $1 
+     ORDER BY lane_no ASC`,
+    [today]
+  );
+  
+  const usedLanes = result.rows.map(row => row.lane_no);
+  
+  // Find first available lane (1-50)
+  for (let i = 1; i <= 50; i++) {
+    if (!usedLanes.includes(i)) {
+      return i;
+    }
+  }
+  
+  // If all lanes 1-50 are used, return next sequential
+  if (usedLanes.length > 0) {
+    return Math.max(...usedLanes) + 1;
+  }
+  
+  // Default to lane 1 if no lanes used today
+  return 1;
+}
+
+/**
+ * Handles ESP32 scan - auto-assigns lane and returns cow details
+ * Used for morning feed distribution
+ */
+export async function handleEsp32Scan(rfidUid, operation = 'feed') {
+  const today = getTodayDateString();
+  
+  // Get cow by RFID UID
+  const cowResult = await pool.query(
+    'SELECT * FROM cows WHERE rfid_uid = $1',
+    [rfidUid]
+  );
+  
+  if (cowResult.rows.length === 0) {
+    throw new Error('Cow not found for this RFID UID');
+  }
+  
+  const cow = cowResult.rows[0];
+  
+  // Check if cow already has an entry today
+  const existingEntries = await pool.query(
+    `SELECT * FROM daily_lane_log 
+     WHERE date = $1 AND cow_id = $2 
+     ORDER BY lane_no ASC 
+     LIMIT 1`,
+    [today, cow.cow_id]
+  );
+  
+  let laneNo;
+  let existingEntry = null;
+  
+  if (existingEntries.rows.length > 0) {
+    // Cow already assigned to a lane today
+    existingEntry = existingEntries.rows[0];
+    laneNo = existingEntry.lane_no;
+  } else {
+    // Auto-assign next available lane
+    laneNo = await getNextAvailableLane();
+    
+    // Create entry with auto-assigned lane (no feed yet)
+    await upsertDailyLaneLog(
+      today,
+      laneNo,
+      cow.cow_id,
+      cow.cow_type || 'normal',
+      {} // No feed/milk data yet
+    );
+    
+    // Fetch the created entry
+    const newEntry = await findExistingRow(today, laneNo, cow.cow_id);
+    existingEntry = newEntry;
+  }
+  
+  // Calculate feed suggestion based on cow type
+  const feedSuggestions = {
+    normal: 4.5,
+    pregnant: 2.5,
+    dry: 3.0
+  };
+  const feedSuggestion = feedSuggestions[cow.cow_type] || 4.5;
+  
+  return {
+    cow: {
+      cow_id: cow.cow_id,
+      name: cow.name,
+      cow_type: cow.cow_type || 'normal',
+      breed: cow.breed
+    },
+    lane_no: laneNo,
+    feed_suggestion_kg: feedSuggestion,
+    existing_entry: existingEntry ? {
+      feed_given_kg: existingEntry.feed_given_kg,
+      morning_yield_l: existingEntry.morning_yield_l,
+      evening_yield_l: existingEntry.evening_yield_l,
+      total_yield_l: existingEntry.total_yield_l
+    } : null
+  };
+}
+

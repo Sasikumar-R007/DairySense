@@ -19,6 +19,12 @@ import {
   getCowReadOnlyProfile
 } from '../services/cowService.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { 
+  storePendingRfidScan, 
+  getPendingRfidScan, 
+  getAllPendingRfidScans,
+  removePendingRfidScan 
+} from '../services/rfidLinkService.js';
 
 const router = express.Router();
 
@@ -40,39 +46,9 @@ router.get('/public/:cowId/profile', async (req, res) => {
   }
 });
 
-// TEMPORARY: RFID endpoint without authentication (for ESP hardware testing)
-// TODO: Re-enable authentication after ESP JWT implementation
-router.get('/rfid/:rfidUid', async (req, res) => {
-  try {
-    const { rfidUid } = req.params;
-    const cow = await getCowByRfidUid(rfidUid);
-    
-    if (!cow) {
-      return res.status(404).json({ error: 'Cow not found for this RFID UID' });
-    }
-    
-    // Generate QR code for display on hardware device
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const qrDataUrl = await generateQRCode(cow.cow_id, frontendUrl);
-    
-    res.json({ 
-      data: cow,
-      qr_code: qrDataUrl  // QR code to display on RFID reader device
-    });
-  } catch (error) {
-    console.error('Error fetching cow by RFID:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // TEMPORARY: Endpoint for hardware to register pending RFID scan (for linking)
 // Hardware sends RFID UID here, frontend polls for it
-import { 
-  storePendingRfidScan, 
-  getPendingRfidScan, 
-  getAllPendingRfidScans,
-  removePendingRfidScan 
-} from '../services/rfidLinkService.js';
+// IMPORTANT: These routes must be defined BEFORE /rfid/:rfidUid to avoid route conflicts
 
 // Hardware endpoint: Register pending RFID scan
 router.post('/rfid/pending', async (req, res) => {
@@ -141,6 +117,32 @@ router.delete('/rfid/pending/:rfidUid', async (req, res) => {
     res.json({ message: 'Pending RFID scan removed' });
   } catch (error) {
     console.error('Error removing pending RFID scan:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// TEMPORARY: RFID endpoint without authentication (for ESP hardware testing)
+// TODO: Re-enable authentication after ESP JWT implementation
+// IMPORTANT: This route must be AFTER /rfid/pending routes to avoid conflicts
+router.get('/rfid/:rfidUid', async (req, res) => {
+  try {
+    const { rfidUid } = req.params;
+    const cow = await getCowByRfidUid(rfidUid);
+    
+    if (!cow) {
+      return res.status(404).json({ error: 'Cow not found for this RFID UID' });
+    }
+    
+    // Generate QR code for display on hardware device
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const qrDataUrl = await generateQRCode(cow.cow_id, frontendUrl);
+    
+    res.json({ 
+      data: cow,
+      qr_code: qrDataUrl  // QR code to display on RFID reader device
+    });
+  } catch (error) {
+    console.error('Error fetching cow by RFID:', error);
     res.status(500).json({ error: error.message });
   }
 });

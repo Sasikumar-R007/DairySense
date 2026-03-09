@@ -51,9 +51,8 @@ async function startServer() {
   try {
     await initializeSchema();
     
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📊 Health check: http://localhost:${PORT}/health`);
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on all interfaces (port ${PORT})`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
