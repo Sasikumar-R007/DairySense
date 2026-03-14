@@ -40,24 +40,22 @@ export async function initializeSchema() {
     if (error.code === 'ENOTFOUND') {
       console.error('\n❌ Cannot resolve database hostname. Please check:');
       console.error('1. Your DATABASE_URL in .env file is correct');
-      console.error('2. The Supabase hostname is valid');
-      console.error('3. Your internet connection is working');
+      console.error('2. The PostgreSQL host is valid and reachable');
+      console.error('3. For local setup, confirm PostgreSQL is running on localhost');
       console.error('\nExample DATABASE_URL format:');
-      console.error('postgresql://postgres:YOUR_PASSWORD@db.xxxxx.supabase.co:5432/postgres\n');
+      console.error('postgresql://postgres:YOUR_PASSWORD@localhost:5432/dairysense_db\n');
     } else if (isTimeout || error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
       console.error('\n❌ Connection timeout or refused. Possible issues:');
-      console.error('1. Your Supabase project might still be initializing (wait 2-3 minutes after resuming)');
-      console.error('2. Connection pooling endpoint might be slow - try direct connection');
-      console.error('3. Check your internet connection and firewall settings');
-      console.error('4. Verify your Supabase project is fully active (not paused)\n');
-      console.error('💡 Tip: If using connection pooling (port 6543), try the direct connection (port 5432)');
-      console.error('   Get it from: Supabase Dashboard → Settings → Database → Connection string → Direct connection\n');
+      console.error('1. PostgreSQL might not be running');
+      console.error('2. The host or port in DATABASE_URL might be wrong');
+      console.error('3. Check firewall settings');
+      console.error('4. For local setup, verify localhost:5432 is accepting connections\n');
     } else if (error.code === 'SELF_SIGNED_CERT_IN_CHAIN') {
       console.error('\n❌ SSL certificate error detected.');
-      console.error('The SSL configuration should handle this automatically.');
+      console.error('The SSL configuration may not match the current database.');
       console.error('If this error persists, try:');
       console.error('1. Restart the server (the SSL config has been updated)');
-      console.error('2. Check if your Supabase project is fully active');
+      console.error('2. Set DB_SSL=false for local PostgreSQL');
       console.error('3. Verify the connection string is correct\n');
     } else {
       console.error('\n❌ Database connection error:', error.message);

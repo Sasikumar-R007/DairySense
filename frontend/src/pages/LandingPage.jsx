@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   LogIn, 
@@ -25,14 +25,25 @@ function LandingPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { login, currentUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleLoginClick = () => {
+    const token = localStorage.getItem('auth_token');
+    if (currentUser && token) {
+      navigate('/monitoring', { replace: true });
+      return;
+    }
+
+    setShowLoginModal(true);
+  };
 
   // Redirect if already logged in
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
-    if (currentUser && token) {
+    if (currentUser && token && !location.state?.allowLanding) {
       navigate('/monitoring', { replace: true });
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, location.state, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,7 +78,7 @@ function LandingPage() {
           </div>
           <button 
             className="login-header-btn"
-            onClick={() => setShowLoginModal(true)}
+            onClick={handleLoginClick}
           >
             <LogIn size={18} />
             <span>Login</span>
@@ -98,7 +109,7 @@ function LandingPage() {
             <div className="hero-actions">
               <button 
                 className="hero-cta-primary"
-                onClick={() => setShowLoginModal(true)}
+                onClick={handleLoginClick}
               >
                 Get Started
                 <ArrowRight size={18} />
@@ -266,7 +277,7 @@ function LandingPage() {
             <p>Start monitoring your operations with precision and intelligence</p>
             <button 
               className="cta-button"
-              onClick={() => setShowLoginModal(true)}
+              onClick={handleLoginClick}
             >
               Get Started Today
               <ArrowRight size={20} />

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import { CheckCircle, FileText } from 'lucide-react';
 import { cowsAPI } from '../services/cowsAPI';
@@ -6,6 +7,7 @@ import { getFeedSuggestion } from '../utils/feedSuggestions';
 import './QRScannerModal.css';
 
 function QRScannerModal({ isOpen, onClose, onScanSuccess }) {
+  const navigate = useNavigate();
   const [scanning, setScanning] = useState(false);
   const [scannedCowId, setScannedCowId] = useState(null);
   const [cowDetails, setCowDetails] = useState(null);
@@ -29,6 +31,10 @@ function QRScannerModal({ isOpen, onClose, onScanSuccess }) {
   const startQRScanning = async () => {
     try {
       setError('');
+
+      if (scannerRef.current) {
+        await stopQRScanning();
+      }
       
       // Create Html5Qrcode instance
       const html5QrCode = new Html5Qrcode(qrCodeRegionId);
@@ -68,9 +74,11 @@ function QRScannerModal({ isOpen, onClose, onScanSuccess }) {
   };
 
   const stopQRScanning = async () => {
-    if (scannerRef.current && scannerRef.current.isScanning) {
+    if (scannerRef.current) {
       try {
-        await scannerRef.current.stop();
+        if (scannerRef.current.isScanning) {
+          await scannerRef.current.stop();
+        }
         await scannerRef.current.clear();
       } catch (err) {
         console.error('Error stopping scanner:', err);
@@ -138,7 +146,7 @@ function QRScannerModal({ isOpen, onClose, onScanSuccess }) {
       setCowDetails(cow);
       setScannedCowId(cowId);
       setScanning(false);
-      stopCamera();
+      await stopQRScanning();
       
       // Call success callback with cow details
       if (onScanSuccess) {
@@ -152,18 +160,19 @@ function QRScannerModal({ isOpen, onClose, onScanSuccess }) {
     }
   };
 
-  const handleClose = () => {
+  const handleClose = async () => {
     setScanning(false);
     setCowDetails(null);
     setScannedCowId(null);
     setError('');
-    stopCamera();
+    await stopQRScanning();
     onClose();
   };
 
   const handleShowFullDetails = () => {
     if (scannedCowId) {
-      window.location.href = `/cow-details/${scannedCowId}`;
+      handleClose();
+      navigate(`/cow-details/${scannedCowId}`);
     }
   };
 
@@ -176,7 +185,7 @@ function QRScannerModal({ isOpen, onClose, onScanSuccess }) {
       <div className="qr-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="qr-modal-header">
           <h2>Scan Cow QR Code</h2>
-          <button onClick={handleClose} className="close-button">×</button>
+          <button type="button" onClick={handleClose} className="close-button" aria-label="Close scanner">×</button>
         </div>
 
         <div className="qr-modal-body">

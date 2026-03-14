@@ -1,0 +1,28 @@
+databases:
+  - name: dairysense-db
+    plan: free
+    databaseName: dairysense
+    user: dairysense
+
+services:
+  - type: web
+    name: dairysense-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dairysense-db
+          property: connectionString
+      - key: DB_SSL
+        value: false
+      - key: DB_SSL_REJECT_UNAUTHORIZED
+        value: false
+      - key: JWT_SECRET
+        generateValue: true
