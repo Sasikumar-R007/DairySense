@@ -71,9 +71,11 @@ function LandingPage() {
       <header className="landing-header-nav">
         <div>
           <div className="landing-logo">
-            <div className="logo-icon">
-              <Activity size={28} />
-            </div>
+            <img
+              src="/assests/ds logo.png"
+              alt="DairySense logo"
+              className="brand-logo-image"
+            />
             <h1>DairySense</h1>
           </div>
           <button 
@@ -297,9 +299,11 @@ function LandingPage() {
               <X size={20} />
             </button>
             <div className="modal-header">
-              <div className="modal-logo">
-                <Activity size={32} />
-              </div>
+              <img
+                src="/assests/ds logo.png"
+                alt="DairySense logo"
+                className="modal-brand-image"
+              />
               <h2>Welcome Back</h2>
               <p>Login to access your dairy management dashboard</p>
             </div>

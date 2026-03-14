@@ -67,6 +67,24 @@
   border-color: var(--primary);
 }
 
+.settings-icon-button {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--text-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition-base);
+}
+
+.settings-icon-button:hover {
+  background: #000;
+}
+
 .logout-button {
   padding: 0.75rem 1.25rem;
   background: var(--text-primary);
@@ -126,6 +144,23 @@
 
 .monitoring-stat-card.highlight {
   border-color: var(--text-primary);
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8ff 100%);
+}
+
+.monitoring-stat-card:nth-child(1) {
+  border-top: 3px solid #3b82f6;
+}
+
+.monitoring-stat-card:nth-child(2) {
+  border-top: 3px solid #22c55e;
+}
+
+.monitoring-stat-card:nth-child(3) {
+  border-top: 3px solid #f59e0b;
+}
+
+.monitoring-stat-card:nth-child(4) {
+  border-top: 3px solid #111111;
 }
 
 .stat-card-header {
@@ -176,7 +211,8 @@
 }
 
 .status-card-panel.alert {
-  border-color: var(--text-primary);
+  border-color: #f59e0b;
+  background: linear-gradient(180deg, #ffffff 0%, #fff7ed 100%);
 }
 
 .status-card-panel {
@@ -189,11 +225,11 @@
   width: 44px;
   height: 44px;
   border-radius: var(--radius-md);
-  background: var(--bg-tertiary);
+  background: #fff7ed;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-primary);
+  color: #c2410c;
   flex-shrink: 0;
 }
 
@@ -222,7 +258,7 @@
 
 .action-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
 
@@ -232,10 +268,10 @@
   justify-content: flex-start;
   gap: 0.625rem;
   padding: 0.875rem 1rem;
-  border: 1px solid var(--border-light);
+  border: 1px solid #111111;
   border-radius: var(--radius-md);
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: #111111;
+  color: #ffffff;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -243,8 +279,8 @@
 }
 
 .action-card:hover {
-  background: var(--bg-tertiary);
-  border-color: var(--border-medium);
+  background: #000000;
+  border-color: #000000;
 }
 
 .error-container {

@@ -123,11 +123,6 @@ function MonitoringDashboard() {
       icon: Database,
       onClick: () => navigate('/dashboard'),
     },
-    {
-      label: 'Settings',
-      icon: Settings,
-      onClick: () => navigate('/settings'),
-    },
   ];
 
   return (
@@ -154,6 +149,13 @@ function MonitoringDashboard() {
               className="date-input"
             />
           </div>
+          <button
+            className="settings-icon-button"
+            onClick={() => navigate('/settings')}
+            aria-label="Settings"
+          >
+            <Settings size={18} />
+          </button>
           <button className="logout-button" onClick={handleLogout}>
             Logout
           </button>
