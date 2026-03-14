@@ -43,6 +43,33 @@
   border-radius: var(--radius-md);
 }
 
+.scope-toggle {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  gap: 0.25rem;
+}
+
+.scope-toggle button {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+.scope-toggle button.active {
+  background: #111111;
+  color: #ffffff;
+}
+
 .date-selector svg {
   color: var(--text-secondary);
   width: 18px;
@@ -118,6 +145,19 @@
   gap: 0.75rem;
   font-size: 1rem;
   font-weight: 500;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.overall-info-banner {
+  background: #111111;
+  color: #ffffff;
+  padding: 0.85rem 1.2rem;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.92rem;
   margin-bottom: 1.5rem;
   box-shadow: var(--shadow-sm);
 }
@@ -323,6 +363,11 @@
   .header-left,
   .header-right {
     width: 100%;
+  }
+
+  .scope-toggle {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .monitoring-header h1 {

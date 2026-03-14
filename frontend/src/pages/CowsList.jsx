@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { cowsAPI } from '../services/cowsAPI';
 import './CowsList.css';
 
@@ -53,7 +54,17 @@ function CowsList() {
     <div className="cows-list">
       <div className="cows-list-card">
         <div className="page-header">
-          <h2>All Cows</h2>
+          <div className="page-header-left">
+            <button
+              onClick={() => navigate(-1)}
+              className="back-button"
+              type="button"
+            >
+              <ArrowLeft size={18} />
+              <span>Back</span>
+            </button>
+            <h2>All Cows</h2>
+          </div>
           <button 
             onClick={() => navigate('/add-cow')} 
             className="add-cow-button"

@@ -17,8 +17,8 @@ const router = express.Router();
  */
 router.get('/dashboard', authenticateToken, async (req, res) => {
   try {
-    const { date } = req.query;
-    const data = await monitoringService.getDashboardData(date || null);
+    const { date, scope } = req.query;
+    const data = await monitoringService.getDashboardData(date || null, scope || 'daily');
     res.json(data);
   } catch (error) {
     console.error('Error fetching dashboard data:', error);

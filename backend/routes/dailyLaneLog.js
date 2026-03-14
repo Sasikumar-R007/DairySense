@@ -6,6 +6,7 @@
 import express from 'express';
 import {
   recordFeed,
+  recordDailyCowData,
   recordMilkYield,
   getTodayLogs,
   getTodayEntryForCowLane,
@@ -36,6 +37,32 @@ router.post('/esp32-scan', async (req, res) => {
 
 // All other routes require authentication
 router.use(authenticateToken);
+
+// Record feed + milk together (demo flow)
+router.post('/record', async (req, res) => {
+  try {
+    const { laneNo, cowId, feedKg, milkYieldL } = req.body;
+
+    if (!laneNo || !cowId || feedKg === undefined || milkYieldL === undefined) {
+      return res.status(400).json({
+        error: 'laneNo, cowId, feedKg, and milkYieldL are required'
+      });
+    }
+
+    const result = await recordDailyCowData(
+      parseInt(laneNo),
+      cowId,
+      parseFloat(feedKg),
+      parseFloat(milkYieldL)
+    );
+
+    res.json({ message: 'Record saved successfully', data: result });
+  } catch (error) {
+    console.error('Error recording daily cow data:', error);
+    const statusCode = error.message.includes('not found') ? 404 : 500;
+    res.status(statusCode).json({ error: error.message });
+  }
+});
 
 // Record feed (Flow A)
 router.post('/feed', async (req, res) => {
@@ -84,7 +111,10 @@ router.post('/milk-yield', async (req, res) => {
     res.json({ message: `${session} yield recorded successfully` });
   } catch (error) {
     console.error('Error recording milk yield:', error);
-    res.status(500).json({ error: error.message });
+    const statusCode = error.message.includes('not found') || error.message.includes('cannot be recorded')
+      ? 400
+      : 500;
+    res.status(statusCode).json({ error: error.message });
   }
 });
 
@@ -123,4 +153,3 @@ router.get('/entry', async (req, res) => {
 });
 
 export default router;
-

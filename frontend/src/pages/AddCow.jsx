@@ -8,6 +8,7 @@ function AddCow() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [generatingId, setGeneratingId] = useState(false);
+  const [availableCows, setAvailableCows] = useState([]);
   const [qrCodeData, setQrCodeData] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [createdCowId, setCreatedCowId] = useState(null);
@@ -16,14 +17,13 @@ function AddCow() {
   
   const [formData, setFormData] = useState({
     cow_id: '',
-    name: '',
+    mother_id: '',
     cow_type: 'normal',
     breed: '',
     date_of_birth: '',
     purchase_date: '',
     last_vaccination_date: '',
     next_vaccination_date: '',
-    number_of_calves: 0,
     notes: ''
   });
   
@@ -41,13 +41,24 @@ function AddCow() {
 
   // Generate cow ID on mount
   useEffect(() => {
-    generateCowId();
+    loadInitialData();
   }, []);
 
-  const generateCowId = async () => {
+  const loadInitialData = async () => {
+    try {
+      const cows = await cowsAPI.getAllCows();
+      setAvailableCows(cows);
+    } catch (error) {
+      console.error('Error loading cows:', error);
+    }
+
+    await generateCowId();
+  };
+
+  const generateCowId = async (motherId = formData.mother_id || null) => {
     setGeneratingId(true);
     try {
-      const cowId = await cowsAPI.generateCowId();
+      const cowId = await cowsAPI.generateCowId(motherId || null);
       setFormData(prev => ({ ...prev, cow_id: cowId }));
     } catch (error) {
       console.error('Error generating cow ID:', error);
@@ -61,22 +72,37 @@ function AddCow() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'number_of_calves' ? parseInt(value) || 0 : value
+      [name]: value
     }));
+  };
+
+  const handleMotherChange = async (e) => {
+    const motherId = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      mother_id: motherId,
+      cow_type: motherId && prev.cow_type === 'normal' ? 'calf' : prev.cow_type
+    }));
+
+    await generateCowId(motherId || null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.cow_id || !formData.name) {
-      showMessage('error', 'Cow ID and Name are required');
+    if (!formData.cow_id) {
+      showMessage('error', 'Cow ID is required');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await cowsAPI.createCow(formData);
+      const response = await cowsAPI.createCow({
+        ...formData,
+        name: formData.cow_id
+      });
       const cowId = response.data.cow_id;
+      setAvailableCows(prev => [response.data, ...prev]);
       
       // Store created cow ID for RFID linking
       setCreatedCowId(cowId);
@@ -492,17 +518,16 @@ function AddCow() {
                   });
                   setFormData({
                     cow_id: '',
-                    name: '',
+                    mother_id: '',
                     cow_type: 'normal',
                     breed: '',
                     date_of_birth: '',
                     purchase_date: '',
                     last_vaccination_date: '',
                     next_vaccination_date: '',
-                    number_of_calves: 0,
                     notes: ''
                   });
-                  generateCowId();
+                  loadInitialData();
                 }} 
                 className="add-another-button"
               >
@@ -535,7 +560,7 @@ function AddCow() {
                   />
                   <button
                     type="button"
-                    onClick={generateCowId}
+                    onClick={() => generateCowId()}
                     disabled={generatingId}
                     className="generate-button"
                   >
@@ -548,23 +573,25 @@ function AddCow() {
                   </button>
                 </div>
               </div>
-
+              <div className="form-group">
+                <label htmlFor="mother_id">Mother Cow</label>
+                <select
+                  id="mother_id"
+                  name="mother_id"
+                  value={formData.mother_id}
+                  onChange={handleMotherChange}
+                >
+                  <option value="">None (Base Cow)</option>
+                  {availableCows.map((cow) => (
+                    <option key={cow.cow_id} value={cow.cow_id}>
+                      {cow.cow_id} {cow.name ? `- ${cow.name}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="name">Cow Name *</label>
-                <input
-                  id="name"
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter cow name"
-                />
-              </div>
-
               <div className="form-group">
                 <label htmlFor="cow_type">Cow Type *</label>
                 <select
@@ -575,8 +602,10 @@ function AddCow() {
                   required
                 >
                   <option value="normal">Normal</option>
+                  <option value="milking">Milking Stage</option>
                   <option value="pregnant">Pregnant</option>
                   <option value="dry">Dry</option>
+                  <option value="calf">Calf</option>
                 </select>
               </div>
 
@@ -637,20 +666,6 @@ function AddCow() {
                   name="next_vaccination_date"
                   value={formData.next_vaccination_date}
                   onChange={handleInputChange}
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="number_of_calves">Number of Calves</label>
-                <input
-                  id="number_of_calves"
-                  type="number"
-                  name="number_of_calves"
-                  value={formData.number_of_calves}
-                  onChange={handleInputChange}
-                  min="0"
                 />
               </div>
             </div>

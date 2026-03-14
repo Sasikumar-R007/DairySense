@@ -38,7 +38,7 @@ export async function upsertDailyLaneLog(date, laneNo, cowId, cowType, updates =
   const existing = await findExistingRow(date, laneNo, cowId);
   
   // Calculate total yield if morning or evening yield is being updated
-  let totalYieldL = null;
+  let totalYieldL = updates.total_yield_l !== undefined ? updates.total_yield_l : null;
   if (updates.morning_yield_l !== undefined || updates.evening_yield_l !== undefined) {
     const existingMorning = existing?.morning_yield_l || null;
     const existingEvening = existing?.evening_yield_l || null;
@@ -74,7 +74,7 @@ export async function upsertDailyLaneLog(date, laneNo, cowId, cowType, updates =
       setClauses.push(`evening_yield_l = $${paramCount++}`);
       values.push(updates.evening_yield_l);
     }
-    if (totalYieldL !== null) {
+    if (updates.total_yield_l !== undefined || totalYieldL !== null) {
       setClauses.push(`total_yield_l = $${paramCount++}`);
       values.push(totalYieldL);
     }
@@ -107,7 +107,7 @@ export async function upsertDailyLaneLog(date, laneNo, cowId, cowType, updates =
         updates.feed_given_kg || null,
         updates.morning_yield_l || null,
         updates.evening_yield_l || null,
-        totalYieldL
+        updates.total_yield_l !== undefined ? updates.total_yield_l : totalYieldL
       ]
     );
     
@@ -122,6 +122,7 @@ export async function upsertDailyLaneLog(date, laneNo, cowId, cowType, updates =
  */
 export async function recordFeed(laneNo, cowId, feedKg, cowType = null) {
   const today = getTodayDateString();
+  const existing = await findExistingRow(today, laneNo, cowId);
   
   // If cow_type not provided, get it from cows table
   if (!cowType) {
@@ -135,9 +136,35 @@ export async function recordFeed(laneNo, cowId, feedKg, cowType = null) {
       cowType = 'normal'; // Default if cow not found
     }
   }
+
+  const updatedFeedKg = (parseFloat(existing?.feed_given_kg) || 0) + (parseFloat(feedKg) || 0);
   
   return await upsertDailyLaneLog(today, laneNo, cowId, cowType, {
-    feed_given_kg: feedKg
+    feed_given_kg: updatedFeedKg
+  });
+}
+
+/**
+ * Records feed and milk yield together for demo mode
+ * Creates or updates today's row for date + lane + cow
+ */
+export async function recordDailyCowData(laneNo, cowId, feedKg, milkYieldL) {
+  const today = getTodayDateString();
+
+  const cowResult = await pool.query(
+    'SELECT cow_type FROM cows WHERE cow_id = $1',
+    [cowId]
+  );
+
+  if (cowResult.rows.length === 0) {
+    throw new Error(`Cow ${cowId} not found`);
+  }
+
+  const cowType = cowResult.rows[0].cow_type || 'normal';
+
+  return await upsertDailyLaneLog(today, laneNo, cowId, cowType, {
+    feed_given_kg: feedKg,
+    total_yield_l: milkYieldL
   });
 }
 
@@ -148,6 +175,19 @@ export async function recordFeed(laneNo, cowId, feedKg, cowType = null) {
  */
 export async function recordMilkYield(cowId, session, yieldL) {
   const today = getTodayDateString();
+
+  const cowResult = await pool.query(
+    'SELECT cow_type FROM cows WHERE cow_id = $1',
+    [cowId]
+  );
+
+  if (cowResult.rows.length === 0) {
+    throw new Error(`Cow ${cowId} not found`);
+  }
+
+  if (cowResult.rows[0].cow_type === 'calf') {
+    throw new Error(`Milk yield cannot be recorded for calf ${cowId}`);
+  }
   
   // Find all today's rows for this cow
   const result = await pool.query(
@@ -333,4 +373,3 @@ export async function handleEsp32Scan(rfidUid, operation = 'feed') {
     } : null
   };
 }
-

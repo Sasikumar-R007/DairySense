@@ -84,9 +84,10 @@ export async function initializeSchema() {
       CREATE TABLE IF NOT EXISTS cows (
         id SERIAL PRIMARY KEY,
         cow_id VARCHAR(255) UNIQUE NOT NULL,
+        mother_id VARCHAR(255),
         rfid_uid VARCHAR(255) UNIQUE,
         name VARCHAR(255),
-        cow_type VARCHAR(50) CHECK (cow_type IN ('normal', 'pregnant', 'dry')) DEFAULT 'normal',
+        cow_type VARCHAR(50) CHECK (cow_type IN ('normal', 'pregnant', 'dry', 'calf', 'milking')) DEFAULT 'normal',
         breed VARCHAR(255),
         date_of_birth DATE,
         purchase_date DATE,
@@ -98,6 +99,19 @@ export async function initializeSchema() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Add mother_id column if it doesn't exist (for existing databases)
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'cows' AND column_name = 'mother_id'
+        ) THEN
+          ALTER TABLE cows ADD COLUMN mother_id VARCHAR(255);
+        END IF;
+      END $$;
     `);
 
     // Add rfid_uid column if it doesn't exist (for existing databases)
@@ -128,7 +142,7 @@ export async function initializeSchema() {
         date DATE NOT NULL,
         lane_no INTEGER NOT NULL,
         cow_id VARCHAR(255) NOT NULL,
-        cow_type VARCHAR(50) CHECK (cow_type IN ('normal', 'pregnant', 'dry')),
+        cow_type VARCHAR(50) CHECK (cow_type IN ('normal', 'pregnant', 'dry', 'calf', 'milking')),
         feed_given_kg DECIMAL(10, 2),
         morning_yield_l DECIMAL(10, 2),
         evening_yield_l DECIMAL(10, 2),
@@ -171,6 +185,34 @@ export async function initializeSchema() {
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_cows_cow_id 
       ON cows(cow_id)
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_cows_mother_id
+      ON cows(mother_id)
+    `);
+
+    // Expand cow_type checks for existing databases
+    await client.query(`
+      ALTER TABLE cows
+      DROP CONSTRAINT IF EXISTS cows_cow_type_check
+    `);
+
+    await client.query(`
+      ALTER TABLE cows
+      ADD CONSTRAINT cows_cow_type_check
+      CHECK (cow_type IN ('normal', 'pregnant', 'dry', 'calf', 'milking'))
+    `);
+
+    await client.query(`
+      ALTER TABLE daily_lane_log
+      DROP CONSTRAINT IF EXISTS daily_lane_log_cow_type_check
+    `);
+
+    await client.query(`
+      ALTER TABLE daily_lane_log
+      ADD CONSTRAINT daily_lane_log_cow_type_check
+      CHECK (cow_type IN ('normal', 'pregnant', 'dry', 'calf', 'milking'))
     `);
 
     await client.query(`

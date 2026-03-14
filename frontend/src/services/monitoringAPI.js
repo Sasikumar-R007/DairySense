@@ -13,8 +13,15 @@ export const monitoringAPI = {
    * Get dashboard data
    * @param {string} date - Optional date in YYYY-MM-DD format
    */
-  getDashboard: async (date = null) => {
-    const params = date ? `?date=${date}` : '';
+  getDashboard: async (date = null, scope = 'daily') => {
+    const queryParams = new URLSearchParams();
+    if (date) {
+      queryParams.set('date', date);
+    }
+    if (scope) {
+      queryParams.set('scope', scope);
+    }
+    const params = queryParams.toString() ? `?${queryParams.toString()}` : '';
     return apiRequest(`${BASE_URL}/dashboard${params}`, {
       method: 'GET',
     });

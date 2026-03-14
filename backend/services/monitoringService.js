@@ -190,7 +190,56 @@ async function calculateDailyFarmSummary(targetDate) {
 /**
  * Gets dashboard data for a specific date
  */
-export async function getDashboardData(date = null) {
+export async function getDashboardData(date = null, scope = 'daily') {
+  if (scope === 'overall') {
+    const cowsCountResult = await pool.query(`
+      SELECT COUNT(*) as count
+      FROM cows
+      WHERE status = 'active'
+    `);
+
+    const totalsResult = await pool.query(`
+      SELECT
+        COALESCE(SUM(feed_given_kg), 0) as total_feed,
+        COALESCE(SUM(total_yield_l), 0) as total_milk,
+        COUNT(DISTINCT date) as total_days,
+        MIN(date) as first_date,
+        MAX(date) as last_date
+      FROM daily_lane_log
+    `);
+
+    const lowYieldResult = await pool.query(`
+      SELECT COUNT(DISTINCT cow_id) as count
+      FROM cow_daily_status
+      WHERE status = 'ATTENTION'
+    `);
+
+    const totalCows = parseInt(cowsCountResult.rows[0]?.count || 0);
+    const totalFeed = parseFloat(totalsResult.rows[0]?.total_feed || 0);
+    const totalMilk = parseFloat(totalsResult.rows[0]?.total_milk || 0);
+    const totalDays = parseInt(totalsResult.rows[0]?.total_days || 0);
+    const yieldFeedRatio = totalFeed > 0 ? totalMilk / totalFeed : 0;
+    const lowYieldCount = parseInt(lowYieldResult.rows[0]?.count || 0);
+    const firstRecordedDate = totalsResult.rows[0]?.first_date
+      ? totalsResult.rows[0].first_date.toISOString().split('T')[0]
+      : null;
+    const lastRecordedDate = totalsResult.rows[0]?.last_date
+      ? totalsResult.rows[0].last_date.toISOString().split('T')[0]
+      : null;
+
+    return {
+      scope: 'overall',
+      totalCows,
+      totalMilk: parseFloat(totalMilk.toFixed(2)),
+      totalFeed: parseFloat(totalFeed.toFixed(2)),
+      yieldFeedRatio: parseFloat(yieldFeedRatio.toFixed(2)),
+      lowYieldCount,
+      totalRecordedDays: totalDays,
+      firstRecordedDate,
+      lastRecordedDate
+    };
+  }
+
   const targetDate = date || getTodayDateString();
   
   // Calculate summary (ensures data is synced)
@@ -230,11 +279,15 @@ export async function getDashboardData(date = null) {
   }
   
   return {
+    scope: 'daily',
     totalCows,
     totalMilk: parseFloat(summary.totalMilk.toFixed(2)),
     totalFeed: parseFloat(summary.totalFeed.toFixed(2)),
     yieldFeedRatio: parseFloat(yieldFeedRatio),
-    lowYieldCount
+    lowYieldCount,
+    totalRecordedDays: 1,
+    firstRecordedDate: targetDate,
+    lastRecordedDate: targetDate
   };
 }
 

@@ -6,32 +6,64 @@
 import pool from '../config/database.js';
 import QRCode from 'qrcode';
 
+function parseChildSequence(parentId, childId) {
+  if (!childId.startsWith(`${parentId}.`)) {
+    return null;
+  }
+
+  const suffix = childId.slice(parentId.length + 1);
+  if (!/^\d+$/.test(suffix)) {
+    return null;
+  }
+
+  return parseInt(suffix, 10);
+}
+
 /**
  * Generate unique cow ID
- * Format: COW-YYYYMMDD-XXX (e.g., COW-20251225-001)
+ * Base cows: COW-001, COW-002
+ * Lineage cows: COW-001.1, COW-001.2.1
  */
-export async function generateCowId() {
-  const today = new Date();
-  const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
-  
-  // Find the last cow ID with today's date
+export async function generateCowId(motherId = null) {
+  if (motherId) {
+    const mother = await getCowById(motherId);
+    if (!mother) {
+      throw new Error(`Mother cow ${motherId} not found`);
+    }
+
+    const result = await pool.query(
+      `SELECT cow_id FROM cows
+       WHERE cow_id LIKE $1`,
+      [`${motherId}.%`]
+    );
+
+    let maxChildSequence = 0;
+    for (const row of result.rows) {
+      const sequence = parseChildSequence(motherId, row.cow_id);
+      if (sequence !== null && sequence > maxChildSequence) {
+        maxChildSequence = sequence;
+      }
+    }
+
+    return `${motherId}.${maxChildSequence + 1}`;
+  }
+
   const result = await pool.query(
-    `SELECT cow_id FROM cows 
-     WHERE cow_id LIKE $1 
-     ORDER BY cow_id DESC 
-     LIMIT 1`,
-    [`COW-${dateStr}-%`]
+    `SELECT cow_id FROM cows
+     WHERE cow_id ~ '^COW-[0-9]{3}$'
+     ORDER BY cow_id DESC
+     LIMIT 1`
   );
-  
+
   let sequence = 1;
   if (result.rows.length > 0) {
     const lastId = result.rows[0].cow_id;
-    const lastSeq = parseInt(lastId.split('-')[2]);
+    const lastSeq = parseInt(lastId.split('-')[1], 10);
     sequence = lastSeq + 1;
   }
-  
+
   const seqStr = sequence.toString().padStart(3, '0');
-  return `COW-${dateStr}-${seqStr}`;
+  return `COW-${seqStr}`;
 }
 
 /**
@@ -66,6 +98,7 @@ export async function generateQRCode(cowId, frontendUrl = null) {
 export async function createCow(cowData) {
   const {
     cow_id,
+    mother_id,
     rfid_uid,
     name,
     cow_type = 'normal',
@@ -89,16 +122,24 @@ export async function createCow(cowData) {
     }
   }
 
+  if (mother_id) {
+    const mother = await getCowById(mother_id);
+    if (!mother) {
+      throw new Error(`Mother cow ${mother_id} not found`);
+    }
+  }
+
   const result = await pool.query(
     `INSERT INTO cows (
-      cow_id, rfid_uid, name, cow_type, breed, date_of_birth, purchase_date,
+      cow_id, mother_id, rfid_uid, name, cow_type, breed, date_of_birth, purchase_date,
       last_vaccination_date, next_vaccination_date, number_of_calves, notes
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     RETURNING *`,
     [
       cow_id,
+      mother_id || null,
       rfid_uid || null,
-      name,
+      name || cow_id,
       cow_type,
       breed,
       date_of_birth || null,
@@ -109,6 +150,18 @@ export async function createCow(cowData) {
       notes || null
     ]
   );
+
+  if (mother_id) {
+    await pool.query(
+      `UPDATE cows
+       SET number_of_calves = (
+         SELECT COUNT(*) FROM cows WHERE mother_id = $1
+       ),
+       updated_at = CURRENT_TIMESTAMP
+       WHERE cow_id = $1`,
+      [mother_id]
+    );
+  }
 
   return result.rows[0];
 }
@@ -153,6 +206,7 @@ export async function getAllCows() {
  */
 export async function updateCow(cowId, cowData) {
   const {
+    mother_id,
     rfid_uid,
     name,
     cow_type,
@@ -180,6 +234,13 @@ export async function updateCow(cowId, cowData) {
     }
   }
 
+  if (mother_id !== undefined && mother_id) {
+    const mother = await getCowById(mother_id);
+    if (!mother) {
+      throw new Error(`Mother cow ${mother_id} not found`);
+    }
+  }
+
   const setClauses = [];
   const values = [];
   let paramCount = 1;
@@ -187,6 +248,10 @@ export async function updateCow(cowId, cowData) {
   if (rfid_uid !== undefined) {
     setClauses.push(`rfid_uid = $${paramCount++}`);
     values.push(rfid_uid || null);
+  }
+  if (mother_id !== undefined) {
+    setClauses.push(`mother_id = $${paramCount++}`);
+    values.push(mother_id || null);
   }
   if (name !== undefined) {
     setClauses.push(`name = $${paramCount++}`);

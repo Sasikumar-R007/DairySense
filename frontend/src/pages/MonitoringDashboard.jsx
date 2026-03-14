@@ -23,17 +23,21 @@ function MonitoringDashboard() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [viewScope, setViewScope] = useState('daily');
   const [error, setError] = useState('');
 
   useEffect(() => {
     fetchDashboardData();
-  }, [selectedDate]);
+  }, [selectedDate, viewScope]);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       setError('');
-      const result = await monitoringAPI.getDashboard(selectedDate);
+      const result = await monitoringAPI.getDashboard(
+        viewScope === 'daily' ? selectedDate : null,
+        viewScope
+      );
       setData(result);
     } catch (err) {
       console.error('Error fetching dashboard:', err);
@@ -101,6 +105,9 @@ function MonitoringDashboard() {
   const totalFeed = data.totalFeed || 0;
   const lowYieldCount = data.lowYieldCount || 0;
   const yieldFeedRatio = data.yieldFeedRatio || 0;
+  const totalRecordedDays = data.totalRecordedDays || 0;
+  const firstRecordedDate = data.firstRecordedDate || null;
+  const lastRecordedDate = data.lastRecordedDate || null;
 
   const actions = [
     {
@@ -140,15 +147,33 @@ function MonitoringDashboard() {
         </div>
 
         <div className="header-right">
-          <div className="date-selector">
-            <Calendar size={18} />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="date-input"
-            />
+          <div className="scope-toggle" role="tablist" aria-label="Dashboard data scope">
+            <button
+              type="button"
+              className={viewScope === 'daily' ? 'active' : ''}
+              onClick={() => setViewScope('daily')}
+            >
+              Daily
+            </button>
+            <button
+              type="button"
+              className={viewScope === 'overall' ? 'active' : ''}
+              onClick={() => setViewScope('overall')}
+            >
+              Overall
+            </button>
           </div>
+          {viewScope === 'daily' && (
+            <div className="date-selector">
+              <Calendar size={18} />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="date-input"
+              />
+            </div>
+          )}
           <button
             className="settings-icon-button"
             onClick={() => navigate('/settings')}
@@ -166,18 +191,33 @@ function MonitoringDashboard() {
         <div className="summary-date-banner">
           <Calendar size={20} />
           <span>
-            {(() => {
-              const [year, month, day] = selectedDate.split('-').map(Number);
-              const date = new Date(year, month - 1, day);
-              return date.toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              });
-            })()}
+            {viewScope === 'overall'
+              ? totalRecordedDays > 0
+                ? `Overall farm data from ${firstRecordedDate} to ${lastRecordedDate}`
+                : 'Overall farm data across all recorded dates'
+              : (() => {
+                  const [year, month, day] = selectedDate.split('-').map(Number);
+                  const date = new Date(year, month - 1, day);
+                  return date.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  });
+                })()}
           </span>
         </div>
+
+        {viewScope === 'overall' && (
+          <div className="overall-info-banner">
+            <History size={18} />
+            <span>
+              {totalRecordedDays > 0
+                ? `Showing all recorded farm data across ${totalRecordedDays} day${totalRecordedDays === 1 ? '' : 's'}.`
+                : 'No historical farm records are available yet.'}
+            </span>
+          </div>
+        )}
 
         <div className="monitoring-stats-grid">
           <div className="monitoring-stat-card">

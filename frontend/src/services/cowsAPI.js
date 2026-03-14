@@ -42,8 +42,9 @@ async function apiRequest(endpoint, options = {}) {
 
 export const cowsAPI = {
   // Generate new cow ID
-  generateCowId: async () => {
-    const response = await apiRequest('/cows/generate-id');
+  generateCowId: async (motherId = null) => {
+    const query = motherId ? `?motherId=${encodeURIComponent(motherId)}` : '';
+    const response = await apiRequest(`/cows/generate-id${query}`);
     return response.cow_id;
   },
   
