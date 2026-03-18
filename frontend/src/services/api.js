@@ -137,3 +137,130 @@ export const dailyLaneLogAPI = {
   },
 };
 
+/**
+ * Farm Feed Log API
+ */
+export const feedAPI = {
+  getCategories: async () => {
+    const response = await apiRequest('/feed/categories');
+    return response.data;
+  },
+
+  getItems: async () => {
+    const response = await apiRequest('/feed/items');
+    return response.data;
+  },
+
+  createFeedLog: async (date, items) => {
+    return apiRequest('/feed/log', {
+      method: 'POST',
+      body: JSON.stringify({ date, items }),
+    });
+  },
+
+  getFeedLogByDate: async (date) => {
+    const response = await apiRequest(`/feed/log?date=${encodeURIComponent(date)}`);
+    return response.data;
+  },
+
+  getWeightGroups: async () => {
+    const response = await apiRequest('/feed/weight-groups');
+    return response.data;
+  },
+
+  getFeedRequirements: async (groupId) => {
+    const response = await apiRequest(`/feed/requirements/${groupId}`);
+    return response.data;
+  },
+
+  getFeedRecommendation: async (cowId) => {
+    const response = await apiRequest(`/feed/recommendation/${encodeURIComponent(cowId)}`);
+    return response.data;
+  },
+};
+
+/**
+ * Parallel Milk Log API
+ */
+export const milkAPI = {
+  createMilkLog: async (date, entries) => {
+    return apiRequest('/milk/log', {
+      method: 'POST',
+      body: JSON.stringify({ date, entries }),
+    });
+  },
+
+  getMilkLogByDate: async (date) => {
+    const response = await apiRequest(`/milk/log?date=${encodeURIComponent(date)}`);
+    return response.data;
+  },
+
+  getMilkLogByCow: async (cowId) => {
+    const response = await apiRequest(`/milk/cow/${encodeURIComponent(cowId)}`);
+    return response.data;
+  },
+};
+
+/**
+ * Medicine API
+ */
+export const medicineAPI = {
+  getMedicines: async () => {
+    const response = await apiRequest('/medicine');
+    return response.data;
+  },
+
+  addMedicine: async (payload) => {
+    return apiRequest('/medicine', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  logCowMedicine: async (payload) => {
+    return apiRequest('/medicine/log', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getCowMedicineHistory: async (cowId) => {
+    const response = await apiRequest(`/medicine/cow/${encodeURIComponent(cowId)}`);
+    return response.data;
+  },
+};
+
+/**
+ * Activity API
+ */
+export const activityAPI = {
+  getPendingActivities: async (cowId = null) => {
+    const query = cowId ? `?cowId=${encodeURIComponent(cowId)}` : '';
+    const response = await apiRequest(`/activity/pending${query}`);
+    return response.data;
+  },
+
+  getCowActivities: async (cowId) => {
+    const response = await apiRequest(`/activity/cow/${encodeURIComponent(cowId)}`);
+    return response.data;
+  },
+
+  completeActivity: async (scheduleId, status = 'Completed', notes = null) => {
+    return apiRequest('/activity/complete', {
+      method: 'POST',
+      body: JSON.stringify({
+        schedule_id: scheduleId,
+        status,
+        notes
+      }),
+    });
+  },
+
+  generateActivities: async (cowId) => {
+    return apiRequest('/activity/generate', {
+      method: 'POST',
+      body: JSON.stringify({ cow_id: cowId }),
+    });
+  },
+};
+

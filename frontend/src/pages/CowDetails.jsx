@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit } from 'lucide-react';
 import { cowsAPI } from '../services/cowsAPI';
+import { medicineAPI } from '../services/api';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './CowDetails.css';
 
@@ -12,6 +13,7 @@ function CowDetails() {
   const [feedHistory, setFeedHistory] = useState([]);
   const [milkHistory, setMilkHistory] = useState([]);
   const [medications, setMedications] = useState([]);
+  const [medicineHistory, setMedicineHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -36,11 +38,12 @@ function CowDetails() {
   const loadCowData = async () => {
     try {
       setLoading(true);
-      const [cowData, feedData, milkData, medsData] = await Promise.all([
+      const [cowData, feedData, milkData, medsData, medicineHistoryData] = await Promise.all([
         cowsAPI.getCowById(cowId),
         cowsAPI.getFeedHistory(cowId, daysRange),
         cowsAPI.getMilkHistory(cowId, daysRange),
-        cowsAPI.getMedications(cowId)
+        cowsAPI.getMedications(cowId),
+        medicineAPI.getCowMedicineHistory(cowId)
       ]);
 
       if (!cowData) {
@@ -79,6 +82,7 @@ function CowDetails() {
       setFeedHistory(processedFeed);
       setMilkHistory(processedMilk);
       setMedications(medsData);
+      setMedicineHistory(medicineHistoryData);
     } catch (error) {
       console.error('Error loading cow data:', error);
       showMessage('error', 'Failed to load cow details');
@@ -408,7 +412,40 @@ function CowDetails() {
 
         {/* Medications */}
         <section className="details-section">
-          <h3>Medications</h3>
+          <h3>Medicine History</h3>
+          {medicineHistory.length === 0 ? (
+            <div className="empty-state">No medicine logs recorded</div>
+          ) : (
+            <div className="table-wrapper">
+              <table className="cows-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Medicine</th>
+                    <th>Dosage</th>
+                    <th>Administered By</th>
+                    <th>Category</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {medicineHistory.map((entry) => (
+                    <tr key={entry.id}>
+                      <td>{new Date(entry.date_given).toLocaleDateString()}</td>
+                      <td>{entry.medicine_name}</td>
+                      <td>{entry.dosage}</td>
+                      <td>{entry.administered_by}</td>
+                      <td>{entry.category}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        {/* Legacy Medications */}
+        <section className="details-section">
+          <h3>Legacy Medications</h3>
           {medications.length === 0 ? (
             <div className="empty-state">No medications recorded</div>
           ) : (

@@ -17,9 +17,11 @@ function AddCow() {
   
   const [formData, setFormData] = useState({
     cow_id: '',
-    mother_id: '',
     cow_type: 'normal',
     breed: '',
+    weight_kg: '',
+    source_type: 'Purchased',
+    parent_id: '',
     date_of_birth: '',
     purchase_date: '',
     last_vaccination_date: '',
@@ -51,14 +53,23 @@ function AddCow() {
     } catch (error) {
       console.error('Error loading cows:', error);
     }
-
-    await generateCowId();
   };
 
-  const generateCowId = async (motherId = formData.mother_id || null) => {
+  const generateCowId = async (overrideData = {}) => {
+    const generationData = {
+      breed: overrideData.breed ?? formData.breed,
+      purchaseDate: overrideData.purchase_date ?? formData.purchase_date,
+      sourceType: overrideData.source_type ?? formData.source_type
+    };
+
+    if (!generationData.breed || !generationData.purchaseDate || !generationData.sourceType) {
+      setFormData(prev => ({ ...prev, cow_id: '' }));
+      return;
+    }
+
     setGeneratingId(true);
     try {
-      const cowId = await cowsAPI.generateCowId(motherId || null);
+      const cowId = await cowsAPI.generateCowId(generationData);
       setFormData(prev => ({ ...prev, cow_id: cowId }));
     } catch (error) {
       console.error('Error generating cow ID:', error);
@@ -70,28 +81,55 @@ function AddCow() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
+    const nextFormData = {
+      ...formData,
       [name]: value
-    }));
+    };
+
+    if (name === 'source_type' && value !== 'Delivered') {
+      nextFormData.parent_id = '';
+    }
+
+    setFormData(nextFormData);
+
+    if (name === 'breed' || name === 'purchase_date' || name === 'source_type') {
+      generateCowId(nextFormData);
+    }
   };
 
-  const handleMotherChange = async (e) => {
-    const motherId = e.target.value;
+  useEffect(() => {
+    if (formData.source_type !== 'Delivered' && formData.parent_id) {
+      setFormData(prev => ({
+        ...prev,
+        parent_id: ''
+      }));
+    }
+  }, [formData.source_type, formData.parent_id]);
+
+  const handleParentChange = (e) => {
+    const parentId = e.target.value;
     setFormData(prev => ({
       ...prev,
-      mother_id: motherId,
-      cow_type: motherId && prev.cow_type === 'normal' ? 'calf' : prev.cow_type
+      parent_id: parentId,
+      cow_type: parentId && prev.cow_type === 'normal' ? 'calf' : prev.cow_type
     }));
-
-    await generateCowId(motherId || null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    if (!formData.breed || !formData.purchase_date || !formData.source_type || !formData.weight_kg) {
+      showMessage('error', 'Breed, Purchase Date, Source Type, and Weight are required');
+      return;
+    }
+
+    if (formData.source_type === 'Delivered' && !formData.parent_id) {
+      showMessage('error', 'Parent ID is required for delivered cows');
+      return;
+    }
+
     if (!formData.cow_id) {
-      showMessage('error', 'Cow ID is required');
+      showMessage('error', 'Cow ID is not ready yet. Please check breed, purchase date, and source type.');
       return;
     }
 
@@ -518,9 +556,11 @@ function AddCow() {
                   });
                   setFormData({
                     cow_id: '',
-                    mother_id: '',
                     cow_type: 'normal',
                     breed: '',
+                    weight_kg: '',
+                    source_type: 'Purchased',
+                    parent_id: '',
                     date_of_birth: '',
                     purchase_date: '',
                     last_vaccination_date: '',
@@ -555,13 +595,13 @@ function AddCow() {
                     value={formData.cow_id}
                     onChange={handleInputChange}
                     required
-                    disabled={generatingId}
-                    placeholder="Will be auto-generated"
+                    disabled
+                    placeholder="Auto-generated from breed, purchase date, and source type"
                   />
                   <button
                     type="button"
                     onClick={() => generateCowId()}
-                    disabled={generatingId}
+                    disabled={generatingId || !formData.breed || !formData.purchase_date || !formData.source_type}
                     className="generate-button"
                   >
                     {generatingId ? 'Generating...' : (
@@ -574,19 +614,16 @@ function AddCow() {
                 </div>
               </div>
               <div className="form-group">
-                <label htmlFor="mother_id">Mother Cow</label>
+                <label htmlFor="source_type">Source Type *</label>
                 <select
-                  id="mother_id"
-                  name="mother_id"
-                  value={formData.mother_id}
-                  onChange={handleMotherChange}
+                  id="source_type"
+                  name="source_type"
+                  value={formData.source_type}
+                  onChange={handleInputChange}
+                  required
                 >
-                  <option value="">None (Base Cow)</option>
-                  {availableCows.map((cow) => (
-                    <option key={cow.cow_id} value={cow.cow_id}>
-                      {cow.cow_id} {cow.name ? `- ${cow.name}` : ''}
-                    </option>
-                  ))}
+                  <option value="Purchased">Purchased</option>
+                  <option value="Delivered">Delivered</option>
                 </select>
               </div>
             </div>
@@ -610,7 +647,7 @@ function AddCow() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="breed">Breed</label>
+                <label htmlFor="breed">Breed *</label>
                 <input
                   id="breed"
                   type="text"
@@ -618,33 +655,98 @@ function AddCow() {
                   value={formData.breed}
                   onChange={handleInputChange}
                   placeholder="Enter breed"
+                  required
                 />
               </div>
             </div>
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="date_of_birth">Date of Birth</label>
+                <label htmlFor="weight_kg">Weight (kg) *</label>
                 <input
-                  id="date_of_birth"
-                  type="date"
-                  name="date_of_birth"
-                  value={formData.date_of_birth}
+                  id="weight_kg"
+                  type="number"
+                  name="weight_kg"
+                  value={formData.weight_kg}
                   onChange={handleInputChange}
+                  min="0"
+                  placeholder="Enter weight in kg"
+                  required
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="purchase_date">Purchase Date</label>
+                <label htmlFor="purchase_date">Purchase Date *</label>
                 <input
                   id="purchase_date"
                   type="date"
                   name="purchase_date"
                   value={formData.purchase_date}
                   onChange={handleInputChange}
+                  required
                 />
               </div>
             </div>
+
+            {formData.source_type === 'Delivered' && (
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="parent_id">Parent ID *</label>
+                  <select
+                    id="parent_id"
+                    name="parent_id"
+                    value={formData.parent_id}
+                    onChange={handleParentChange}
+                    required
+                  >
+                    <option value="">Select Parent Cow</option>
+                    {availableCows
+                      .filter((cow) => cow.is_active !== false)
+                      .map((cow) => (
+                        <option key={cow.cow_id} value={cow.cow_id}>
+                          {cow.cow_id} {cow.breed ? `- ${cow.breed}` : ''}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="date_of_birth">Date of Birth</label>
+                  <input
+                    id="date_of_birth"
+                    type="date"
+                    name="date_of_birth"
+                    value={formData.date_of_birth}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+            )}
+
+            {formData.source_type !== 'Delivered' && (
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="date_of_birth">Date of Birth</label>
+                  <input
+                    id="date_of_birth"
+                    type="date"
+                    name="date_of_birth"
+                    value={formData.date_of_birth}
+                    onChange={handleInputChange}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="purchase_date_hint">Generated Format</label>
+                  <input
+                    id="purchase_date_hint"
+                    type="text"
+                    value={formData.cow_id || 'BREED-MMYY-TYPESEQ'}
+                    disabled
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="form-row">
               <div className="form-group">

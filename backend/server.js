@@ -11,6 +11,10 @@ import authRoutes from './routes/auth.js';
 import dailyLaneLogRoutes from './routes/dailyLaneLog.js';
 import cowsRoutes from './routes/cows.js';
 import monitoringRoutes from './routes/monitoring.js';
+import feedRoutes from './routes/feed.js';
+import milkRoutes from './routes/milk.js';
+import medicineRoutes from './routes/medicine.js';
+import activityRoutes from './routes/activity.js';
 
 dotenv.config();
 
@@ -39,6 +43,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/daily-lane-log', dailyLaneLogRoutes);
 app.use('/api/cows', cowsRoutes);
 app.use('/api/monitoring', monitoringRoutes);
+app.use('/api/feed', feedRoutes);
+app.use('/api/milk', milkRoutes);
+app.use('/api/medicine', medicineRoutes);
+app.use('/api/activity', activityRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -42,8 +42,21 @@ async function apiRequest(endpoint, options = {}) {
 
 export const cowsAPI = {
   // Generate new cow ID
-  generateCowId: async (motherId = null) => {
-    const query = motherId ? `?motherId=${encodeURIComponent(motherId)}` : '';
+  generateCowId: async (options = {}) => {
+    const queryParams = new URLSearchParams();
+    if (options.motherId) {
+      queryParams.set('motherId', options.motherId);
+    }
+    if (options.breed) {
+      queryParams.set('breed', options.breed);
+    }
+    if (options.purchaseDate) {
+      queryParams.set('purchaseDate', options.purchaseDate);
+    }
+    if (options.sourceType) {
+      queryParams.set('sourceType', options.sourceType);
+    }
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
     const response = await apiRequest(`/cows/generate-id${query}`);
     return response.cow_id;
   },

@@ -2,6 +2,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
+import FeedLog from './pages/FeedLog';
+import MilkYieldLog from './pages/MilkYieldLog';
+import FeedRecommendation from './pages/FeedRecommendation';
+import MedicineLog from './pages/MedicineLog';
 import AddCow from './pages/AddCow';
 import CowsList from './pages/CowsList';
 import CowDetails from './pages/CowDetails';
@@ -26,6 +30,38 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/feed-log"
+            element={
+              <ProtectedRoute>
+                <FeedLog />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/milk-log"
+            element={
+              <ProtectedRoute>
+                <MilkYieldLog />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/feed-recommendation"
+            element={
+              <ProtectedRoute>
+                <FeedRecommendation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/medicine-log"
+            element={
+              <ProtectedRoute>
+                <MedicineLog />
               </ProtectedRoute>
             }
           />

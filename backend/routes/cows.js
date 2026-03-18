@@ -154,7 +154,15 @@ router.use(authenticateToken);
 router.get('/generate-id', async (req, res) => {
   try {
     const motherId = req.query.motherId || null;
-    const cowId = await generateCowId(motherId);
+    const breed = req.query.breed || null;
+    const purchaseDate = req.query.purchaseDate || null;
+    const sourceType = req.query.sourceType || null;
+    const cowId = await generateCowId({
+      breed,
+      purchaseDate,
+      sourceType,
+      motherId
+    });
     res.json({ cow_id: cowId });
   } catch (error) {
     console.error('Error generating cow ID:', error);
@@ -210,7 +218,12 @@ router.post('/', async (req, res) => {
     
     // Generate cow ID if not provided
     if (!cowData.cow_id) {
-      cowData.cow_id = await generateCowId(cowData.mother_id || null);
+      cowData.cow_id = await generateCowId({
+        breed: cowData.breed,
+        purchaseDate: cowData.purchase_date,
+        sourceType: cowData.source_type,
+        motherId: cowData.mother_id || cowData.parent_id || null
+      });
     }
     
     const cow = await createCow(cowData);
