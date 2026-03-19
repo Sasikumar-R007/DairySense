@@ -22,6 +22,7 @@ function LandingPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [waitMessage, setWaitMessage] = useState('');
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { login, currentUser } = useAuth();
   const navigate = useNavigate();
@@ -47,20 +48,29 @@ function LandingPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setWaitMessage('');
     setLoading(true);
+
+    const timer = setTimeout(() => {
+      setWaitMessage('Backend server is waking up, this may take up to a minute...');
+    }, 4000);
 
     try {
       const result = await login(email, password);
+      clearTimeout(timer);
       
       if (result.success) {
         navigate('/dashboard', { replace: true });
       } else {
         setError(result.error || 'Failed to login');
         setLoading(false);
+        setWaitMessage('');
       }
     } catch (err) {
+      clearTimeout(timer);
       setError(err.message || 'Failed to login');
       setLoading(false);
+      setWaitMessage('');
     }
   };
 
@@ -308,6 +318,7 @@ function LandingPage() {
             </div>
             <form onSubmit={handleSubmit} className="login-form">
               {error && <div className="error-message">{error}</div>}
+              {waitMessage && <div className="info-message" style={{color: '#0369a1', backgroundColor: '#e0f2fe', padding: '10px', borderRadius: '6px', fontSize: '14px', marginBottom: '15px'}}>{waitMessage}</div>}
               
               <div className="form-group">
                 <label htmlFor="email">Email Address</label>

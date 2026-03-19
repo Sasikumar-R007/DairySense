@@ -34,13 +34,12 @@ export async function apiRequest(endpoint, options = {}) {
   });
   
   if (!response.ok) {
-    // If unauthorized or forbidden, clear invalid token and user data
     if (response.status === 401 || response.status === 403) {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
-      // Dispatch a storage event to notify AuthContext (will be handled by the component)
+      window.dispatchEvent(new Event('auth_unauthorized'));
     }
-    const error = await response.json().catch(() => ({ error: 'Network error' }));
+    const error = await response.json().catch(() => ({ error: 'Network error. Backend might be unreachable or waking up.' }));
     throw new Error(error.error || `HTTP error! status: ${response.status}`);
   }
   
