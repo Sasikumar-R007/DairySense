@@ -27,7 +27,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? FRONTEND_URL 
+    ? [FRONTEND_URL, FRONTEND_URL.replace(/\/$/, ''), 'https://dairysense.vercel.app']
     : true, // Allow all origins in development
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

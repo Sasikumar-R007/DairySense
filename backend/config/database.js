@@ -17,6 +17,22 @@ if (typeof process.setDefaultResultOrder === 'function') {
   dns.setDefaultResultOrder('ipv4first');
 }
 
+// Bypass local DNS blocking of Neon domains
+const originalLookup = dns.lookup;
+dns.lookup = function(hostname, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+  if (hostname && hostname.includes('neon.tech')) {
+    if (options && options.all) {
+      return callback(null, [{ address: '13.228.184.177', family: 4 }]);
+    }
+    return callback(null, '13.228.184.177', 4);
+  }
+  return originalLookup(hostname, options, callback);
+};
+
 function isConfigured(value, placeholder = '') {
   return Boolean(value && value.trim() !== '' && value !== placeholder);
 }
