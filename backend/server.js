@@ -15,6 +15,8 @@ import feedRoutes from './routes/feed.js';
 import milkRoutes from './routes/milk.js';
 import medicineRoutes from './routes/medicine.js';
 import activityRoutes from './routes/activity.js';
+import dashboardRoutes from './routes/dashboard.js';
+import reportRoutes from './routes/report.js';
 
 dotenv.config();
 
@@ -47,6 +49,8 @@ app.use('/api/feed', feedRoutes);
 app.use('/api/milk', milkRoutes);
 app.use('/api/medicine', medicineRoutes);
 app.use('/api/activity', activityRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/report', reportRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

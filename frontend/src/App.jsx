@@ -1,7 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
+import LandingPage from './pages/LandingPage';
+import MasterReport from './pages/MasterReport';
 import FeedLog from './pages/FeedLog';
 import MilkYieldLog from './pages/MilkYieldLog';
 import FeedRecommendation from './pages/FeedRecommendation';
@@ -16,6 +17,8 @@ import MonitoringCowDetail from './pages/MonitoringCowDetail';
 import DailySummary from './pages/DailySummary';
 import HistoryLog from './pages/HistoryLog';
 import Settings from './pages/Settings';
+import FarmActivities from './pages/FarmActivities';
+import SmartDashboard from './pages/SmartDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
@@ -29,7 +32,7 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <SmartDashboard />
               </ProtectedRoute>
             }
           />
@@ -92,6 +95,16 @@ function App() {
           {/* Public read-only route for QR code access */}
           <Route path="/cow/:cowId" element={<CowPublicProfile />} />
           <Route path="/cow" element={<CowPublicProfile />} />
+          
+          <Route
+            path="/record-management"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Monitoring Module Routes */}
           <Route
             path="/monitoring"
@@ -133,11 +146,28 @@ function App() {
               </ProtectedRoute>
             }
           />
+          
           <Route
             path="/settings"
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/farm-activities"
+            element={
+              <ProtectedRoute>
+                <FarmActivities />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/master-report"
+            element={
+              <ProtectedRoute>
+                <MasterReport />
               </ProtectedRoute>
             }
           />

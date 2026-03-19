@@ -30,7 +30,7 @@ function LandingPage() {
   const handleLoginClick = () => {
     const token = localStorage.getItem('auth_token');
     if (currentUser && token) {
-      navigate('/monitoring', { replace: true });
+      navigate('/dashboard', { replace: true });
       return;
     }
 
@@ -41,10 +41,9 @@ function LandingPage() {
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
     if (currentUser && token && !location.state?.allowLanding) {
-      navigate('/monitoring', { replace: true });
+      navigate('/dashboard', { replace: true });
     }
   }, [currentUser, location.state, navigate]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -54,7 +53,7 @@ function LandingPage() {
       const result = await login(email, password);
       
       if (result.success) {
-        navigate('/monitoring', { replace: true });
+        navigate('/dashboard', { replace: true });
       } else {
         setError(result.error || 'Failed to login');
         setLoading(false);

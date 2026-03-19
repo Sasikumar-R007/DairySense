@@ -264,3 +264,42 @@ export const activityAPI = {
   },
 };
 
+/**
+ * Dashboard API
+ */
+export const dashboardAPI = {
+  getDashboardData: async (dateStr) => {
+    return apiRequest(`/dashboard?date=${dateStr}`);
+  }
+};
+
+/**
+ * Report API
+ */
+export const reportAPI = {
+  downloadDailyReport: async (dateStr) => {
+    const token = localStorage.getItem('auth_token');
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/report/daily/pdf?date=${dateStr}`, {
+      method: 'GET',
+      headers
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Network error' }));
+      throw new Error(error.error || 'Failed to download report');
+    }
+    
+    return response.blob();
+  },
+  
+  getMasterReport: async (from, to) => {
+    const response = await apiRequest(`/report/master?from=${from}&to=${to}`);
+    return response.data;
+  }
+};
+

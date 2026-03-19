@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, Plus, Users, ArrowLeft, Wheat, Milk, Scale, Syringe } from 'lucide-react';
+import { BarChart3, Plus, Users, ArrowLeft, Wheat, Milk, Scale, Syringe, ClipboardList, Monitor } from 'lucide-react';
 import ScanCow from '../components/ScanCow';
 import RecordMilkYield from '../components/RecordMilkYield';
 import LiveTable from '../components/LiveTable';
@@ -120,6 +120,26 @@ function Dashboard() {
           <div className="button-text">
             <span className="button-title">Medicine Log</span>
             <span className="button-subtitle">Record medicines and supplements</span>
+          </div>
+        </button>
+        <button
+          onClick={() => navigate('/farm-activities')}
+          className="action-button-modern cows-list-button-modern"
+        >
+          <ClipboardList size={24} />
+          <div className="button-text">
+            <span className="button-title">Farm Activities</span>
+            <span className="button-subtitle">Manage routine activities</span>
+          </div>
+        </button>
+        <button
+          onClick={() => navigate('/smart-dashboard')}
+          className="action-button-modern add-cow-button-modern"
+        >
+          <Monitor size={24} />
+          <div className="button-text">
+            <span className="button-title">Smart Dashboard</span>
+            <span className="button-subtitle">Unified Insights Phase 7</span>
           </div>
         </button>
       </div>

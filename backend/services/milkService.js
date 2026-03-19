@@ -85,21 +85,36 @@ export async function createMilkLog(date, entries = []) {
       const milkLitre = convertKgToLitre(milkKg);
       const recordedAt = new Date();
 
-      const result = await client.query(
-        `INSERT INTO milk_yield_log (
-          date, cow_id, session, milk_qty_kg, milk_qty_litre, recorded_at, notes
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING *`,
-        [
-          date,
-          cow_id,
-          normalizedSession,
-          milkKg,
-          milkLitre,
-          recordedAt,
-          notes || null
-        ]
+      const checkRes = await client.query(
+        `SELECT id FROM milk_yield_log WHERE cow_id = $1 AND date = $2 AND session = $3`,
+        [cow_id, date, normalizedSession]
       );
+
+      let result;
+      if (checkRes.rows.length > 0) {
+        result = await client.query(
+          `UPDATE milk_yield_log 
+           SET milk_qty_kg = $1, milk_qty_litre = $2, recorded_at = $3, notes = COALESCE($4, notes)
+           WHERE id = $5 RETURNING *`,
+          [milkKg, milkLitre, recordedAt, notes || null, checkRes.rows[0].id]
+        );
+      } else {
+        result = await client.query(
+          `INSERT INTO milk_yield_log (
+            date, cow_id, session, milk_qty_kg, milk_qty_litre, recorded_at, notes
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+          RETURNING *`,
+          [
+            date,
+            cow_id,
+            normalizedSession,
+            milkKg,
+            milkLitre,
+            recordedAt,
+            notes || null
+          ]
+        );
+      }
 
       insertedRows.push(result.rows[0]);
     }
