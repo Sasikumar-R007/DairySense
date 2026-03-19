@@ -3,7 +3,7 @@
  * Main entry point for the backend API
  */
 
-import express from 'express';
+import express from 'express'; // Force Render redeployment trigger
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { initializeSchema } from './config/dbSchema.js';

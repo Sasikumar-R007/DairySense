@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'; // Force Vercel redeployment trigger
 import { AuthProvider } from './context/AuthContext';
 import Dashboard from './pages/Dashboard';
 import LandingPage from './pages/LandingPage';
