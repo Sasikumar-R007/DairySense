@@ -40,10 +40,10 @@ function MasterReport() {
     if (!data.length) return;
     
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Date,Total Milk (L),Total Feed (kg),Feed Cost (Rs),Active Cows\n";
+    csvContent += "Cow ID,Name,Type,Status,Total Milk (L),Avg Milk/Day(L),Total Feed (kg)\n";
     
     data.forEach(row => {
-      const line = `${row.date},${row.total_milk},${row.total_feed},${row.feed_cost},${row.active_cows}`;
+      const line = `${row.cow_id},${row.name},${row.cow_type},${row.status},${row.total_milk},${row.avg_milk_per_day},${row.total_feed}`;
       csvContent += line + "\n";
     });
     
@@ -121,27 +121,32 @@ function MasterReport() {
           <table className="master-table">
             <thead>
               <tr>
-                <th>Date</th>
+                <th>Cow ID</th>
+                <th>Name</th>
+                <th>Status</th>
                 <th>Total Milk (L)</th>
+                <th>Avg Milk/Day</th>
                 <th>Total Feed (kg)</th>
-                <th>Feed Cost (Rs)</th>
-                <th>Active Cows</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {data.map((row, index) => (
                 <tr key={index}>
-                  <td className="date-cell">{row.date}</td>
-                  <td className="highlight-green">{Number(row.total_milk).toFixed(1)} L</td>
-                  <td className="highlight-orange">{Number(row.total_feed).toFixed(1)} kg</td>
-                  <td>₹ {Number(row.feed_cost).toFixed(2)}</td>
-                  <td>{row.active_cows}</td>
+                  <td className="cow-id-cell">{row.cow_id}</td>
+                  <td>{row.name}</td>
                   <td>
-                    {/* Reuses SmartDashboard state via URL param if you want detailed views */}
+                    <span className={`status-badge ${row.status === 'active' ? 'active' : 'inactive'}`}>
+                      {row.cow_type} ({row.status})
+                    </span>
+                  </td>
+                  <td className="highlight-green">{Number(row.total_milk).toFixed(1)} L</td>
+                  <td className="highlight-blue">{Number(row.avg_milk_per_day).toFixed(1)} L/d</td>
+                  <td className="highlight-orange">{Number(row.total_feed).toFixed(1)} kg</td>
+                  <td>
                     <button 
                       className="view-detail-link"
-                      onClick={() => navigate(`/smart-dashboard?date=${row.date}`)}
+                      onClick={() => navigate(`/cow-details/${row.cow_id}`)}
                     >
                       View Details
                     </button>

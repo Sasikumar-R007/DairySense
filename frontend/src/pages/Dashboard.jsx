@@ -11,6 +11,7 @@ function Dashboard() {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('scan'); // 'scan', 'milk', 'table'
+  const [showAdvancedTracking, setShowAdvancedTracking] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -39,26 +40,38 @@ function Dashboard() {
         </div>
       </header>
 
-      <nav className="dashboard-nav">
+      <div className="advanced-tracking-toggle-container" style={{ textAlign: 'center', marginBottom: '1rem', marginTop: '1rem' }}>
         <button 
-          className={`nav-button ${activeTab === 'scan' ? 'active' : ''}`}
-          onClick={() => setActiveTab('scan')}
+          className="modern-download-btn"
+          onClick={() => setShowAdvancedTracking(!showAdvancedTracking)}
+          style={{ width: 'auto', padding: '0.75rem 2rem', backgroundColor: '#e2e8f0', color: '#1e293b', border: 'none', borderRadius: '6px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s ease' }}
         >
-          Scan Cow & Feed
+          {showAdvancedTracking ? 'Hide' : 'Show'} Advanced Real-time Tracking (Optional)
         </button>
-        <button 
-          className={`nav-button ${activeTab === 'milk' ? 'active' : ''}`}
-          onClick={() => setActiveTab('milk')}
-        >
-          Record Milk Yield
-        </button>
-        <button 
-          className={`nav-button ${activeTab === 'table' ? 'active' : ''}`}
-          onClick={() => setActiveTab('table')}
-        >
-          Live Table View
-        </button>
-      </nav>
+      </div>
+
+      {showAdvancedTracking && (
+        <nav className="dashboard-nav">
+          <button 
+            className={`nav-button ${activeTab === 'scan' ? 'active' : ''}`}
+            onClick={() => setActiveTab('scan')}
+          >
+            Scan Cow & Feed
+          </button>
+          <button 
+            className={`nav-button ${activeTab === 'milk' ? 'active' : ''}`}
+            onClick={() => setActiveTab('milk')}
+          >
+            Record Milk Yield
+          </button>
+          <button 
+            className={`nav-button ${activeTab === 'table' ? 'active' : ''}`}
+            onClick={() => setActiveTab('table')}
+          >
+            Live Table View
+          </button>
+        </nav>
+      )}
 
       {/* Action Buttons Section */}
       <div className="dashboard-action-buttons">
@@ -133,22 +146,24 @@ function Dashboard() {
           </div>
         </button>
         <button
-          onClick={() => navigate('/smart-dashboard')}
+          onClick={() => navigate('/monitoring')}
           className="action-button-modern add-cow-button-modern"
         >
           <Monitor size={24} />
           <div className="button-text">
-            <span className="button-title">Smart Dashboard</span>
-            <span className="button-subtitle">Unified Insights Phase 7</span>
+            <span className="button-title">Monitoring</span>
+            <span className="button-subtitle">Unified Insights Dashboard</span>
           </div>
         </button>
       </div>
 
-      <main className="dashboard-content">
-        {activeTab === 'scan' && <ScanCow />}
-        {activeTab === 'milk' && <RecordMilkYield />}
-        {activeTab === 'table' && <LiveTable />}
-      </main>
+      {showAdvancedTracking && (
+        <main className="dashboard-content">
+          {activeTab === 'scan' && <ScanCow />}
+          {activeTab === 'milk' && <RecordMilkYield />}
+          {activeTab === 'table' && <LiveTable />}
+        </main>
+      )}
     </div>
   );
 }

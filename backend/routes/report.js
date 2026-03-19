@@ -40,41 +40,42 @@ router.get('/master', async (req, res) => {
       return res.status(400).json({ error: 'Missing from and to dates' });
     }
 
-    // CTE to get one row per date combining milk sum, feed sum, and distinct cows
+    // Aggregating data per cow
     const result = await pool.query(`
-      WITH dates AS (
-        SELECT generate_series($1::date, $2::date, '1 day'::interval)::date as rep_date
-      ),
-      milk_stats AS (
-        SELECT date, SUM(milk_qty_litre) as total_milk 
+      WITH cow_milk AS (
+        SELECT cow_id, SUM(milk_qty_litre) as total_milk, COUNT(DISTINCT date) as milking_days
         FROM (
           SELECT date, cow_id, session, milk_qty_litre,
                  ROW_NUMBER() OVER(PARTITION BY date, cow_id, session ORDER BY recorded_at DESC) as rn
           FROM milk_yield_log
           WHERE date BETWEEN $1 AND $2
         ) x WHERE rn = 1
-        GROUP BY date
+        GROUP BY cow_id
       ),
-      feed_stats AS (
-        SELECT date, SUM(quantity_kg) as total_feed, SUM(total_amount) as feed_cost
-        FROM feed_log
+      cow_feed AS (
+        SELECT cow_id, SUM(feed_given_kg) as total_feed
+        FROM daily_lane_log
         WHERE date BETWEEN $1 AND $2
-        GROUP BY date
-      ),
-      cow_stats AS (
-        SELECT COUNT(*) as active_cows
-        FROM cows WHERE status = 'Active' OR is_active = true
+        GROUP BY cow_id
       )
       SELECT 
-        TO_CHAR(d.rep_date, 'YYYY-MM-DD') as date,
+        c.cow_id,
+        c.name,
+        c.cow_type,
+        c.status,
         COALESCE(m.total_milk, 0) as total_milk,
+        COALESCE(m.milking_days, 0) as milking_days,
         COALESCE(f.total_feed, 0) as total_feed,
-        COALESCE(f.feed_cost, 0) as feed_cost,
-        (SELECT active_cows FROM cow_stats) as active_cows
-      FROM dates d
-      LEFT JOIN milk_stats m ON d.rep_date = m.date
-      LEFT JOIN feed_stats f ON d.rep_date = f.date
-      ORDER BY d.rep_date DESC
+        CASE 
+          WHEN COALESCE(m.milking_days, 0) > 0 
+           THEN ROUND((COALESCE(m.total_milk, 0) / m.milking_days), 2)
+          ELSE 0 
+        END as avg_milk_per_day
+      FROM cows c
+      LEFT JOIN cow_milk m ON c.cow_id = m.cow_id
+      LEFT JOIN cow_feed f ON c.cow_id = f.cow_id
+      WHERE (COALESCE(m.total_milk, 0) > 0 OR COALESCE(f.total_feed, 0) > 0 OR c.status = 'active')
+      ORDER BY m.total_milk DESC NULLS LAST
     `, [from, to]);
 
     res.json({ data: result.rows });
