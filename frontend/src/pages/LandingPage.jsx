@@ -42,11 +42,7 @@ function LandingPage() {
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
     if (currentUser && token && !location.state?.allowLanding) {
-      if (currentUser.role === 'worker' && !currentUser.permissions?.canViewReports) {
-        navigate('/record-management', { replace: true });
-      } else {
-        navigate('/dashboard', { replace: true });
-      }
+      navigate('/dashboard', { replace: true });
     }
   }, [currentUser, location.state, navigate]);
   const handleSubmit = async (e) => {
@@ -68,9 +64,7 @@ function LandingPage() {
         const userStr = localStorage.getItem('user');
         const userObj = userStr ? JSON.parse(userStr) : null;
         
-        if (userObj?.role === 'worker' && !userObj?.permissions?.canViewReports) {
-          navigate('/record-management', { replace: true });
-        } else {
+        if (userObj) {
           navigate('/dashboard', { replace: true });
         }
       } else {

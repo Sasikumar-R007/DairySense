@@ -11,8 +11,11 @@ import {
   Monitor, 
   UserCog, 
   LogOut, 
-  Database
+  Database,
+  Menu,
+  X
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import '../pages/Dashboard.css'; // Contains the sidebar styles
 
 function Layout() {
@@ -44,10 +47,30 @@ function Layout() {
 
   const isActive = (path) => location.pathname === path ? 'active' : '';
 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Close menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
   return (
     <div className="erp-dashboard-layout">
+      {/* Mobile Header Toggle */}
+      <div className="mobile-header-toggle">
+        <div className="brand-logo" style={{ width: '32px', height: '32px', fontSize: '13px' }}>DS</div>
+        <button className="hamburger-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+
+      {/* Overlay for mobile */}
+      {isMobileMenuOpen && (
+        <div className="mobile-sidebar-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>
+      )}
+
       {/* Sidebar Navigation */}
-      <aside className="erp-sidebar">
+      <aside className={`erp-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-brand">
           <div className="brand-logo">DS</div>
           <div className="brand-text">
