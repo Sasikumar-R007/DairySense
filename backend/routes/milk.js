@@ -8,7 +8,8 @@ import { authenticateToken } from '../middleware/auth.js';
 import {
   createMilkLog,
   getMilkLogByDate,
-  getMilkLogByCow
+  getMilkLogByCow,
+  getAllMilkLogs
 } from '../services/milkService.js';
 
 const router = express.Router();
@@ -28,6 +29,17 @@ router.get('/log', async (req, res) => {
     console.error('Error fetching milk logs by date:', error);
     const statusCode = error.message.includes('required') ? 400 : 500;
     res.status(statusCode).json({ error: error.message });
+  }
+});
+
+router.get('/all-logs', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const logs = await getAllMilkLogs(startDate, endDate);
+    res.json({ data: logs });
+  } catch (error) {
+    console.error('Error fetching all milk logs:', error);
+    res.status(500).json({ error: 'Failed to fetch milk records' });
   }
 });
 

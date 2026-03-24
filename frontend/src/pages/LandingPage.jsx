@@ -42,7 +42,11 @@ function LandingPage() {
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
     if (currentUser && token && !location.state?.allowLanding) {
-      navigate('/dashboard', { replace: true });
+      if (currentUser.role === 'worker' && !currentUser.permissions?.canViewReports) {
+        navigate('/record-management', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     }
   }, [currentUser, location.state, navigate]);
   const handleSubmit = async (e) => {
@@ -60,7 +64,15 @@ function LandingPage() {
       clearTimeout(timer);
       
       if (result.success) {
-        navigate('/dashboard', { replace: true });
+        // Since we don't have user object directly from result.success we can check stored user or just use a full reload or check localStorage
+        const userStr = localStorage.getItem('user');
+        const userObj = userStr ? JSON.parse(userStr) : null;
+        
+        if (userObj?.role === 'worker' && !userObj?.permissions?.canViewReports) {
+          navigate('/record-management', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
       } else {
         setError(result.error || 'Failed to login');
         setLoading(false);
@@ -321,14 +333,14 @@ function LandingPage() {
               {waitMessage && <div className="info-message" style={{color: '#0369a1', backgroundColor: '#e0f2fe', padding: '10px', borderRadius: '6px', fontSize: '14px', marginBottom: '15px'}}>{waitMessage}</div>}
               
               <div className="form-group">
-                <label htmlFor="email">Email Address</label>
+                <label htmlFor="email">Email or Mobile Number</label>
                 <input
                   id="email"
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder="Enter your email"
+                  placeholder="Enter your email or mobile number"
                 />
               </div>
 

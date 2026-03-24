@@ -97,5 +97,20 @@ router.get('/history', authenticateToken, async (req, res) => {
   }
 });
 
-export default router;
+/**
+ * GET /api/monitoring/ratio-history
+ * Get farm-level Yield to Feed ratio over time
+ * Query params: days (optional, defaults to 30)
+ */
+router.get('/ratio-history', authenticateToken, async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 30;
+    const data = await monitoringService.getRatioHistory(days);
+    res.json({ data });
+  } catch (error) {
+    console.error('Error fetching ratio history:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
+export default router;

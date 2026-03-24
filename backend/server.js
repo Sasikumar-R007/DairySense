@@ -1,6 +1,6 @@
 /**
  * Express Server
- * Main entry point for the backend API
+ * Main entry point for the backend API server
  */
 
 import express from 'express'; // Force Render redeployment trigger
@@ -17,6 +17,7 @@ import medicineRoutes from './routes/medicine.js';
 import activityRoutes from './routes/activity.js';
 import dashboardRoutes from './routes/dashboard.js';
 import reportRoutes from './routes/report.js';
+import usersRoutes from './routes/users.js';
 
 dotenv.config();
 
@@ -51,6 +52,7 @@ app.use('/api/medicine', medicineRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/report', reportRoutes);
+app.use('/api/users', usersRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

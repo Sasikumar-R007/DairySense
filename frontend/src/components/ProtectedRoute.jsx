@@ -1,11 +1,15 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute({ children, requireAdmin = false }) {
   const { currentUser } = useAuth();
 
   if (!currentUser) {
     return <Navigate to="/" replace />;
+  }
+
+  if (requireAdmin && currentUser.role === 'worker') {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;

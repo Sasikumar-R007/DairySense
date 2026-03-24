@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, FileSpreadsheet, Calendar, Search } from 'lucide-react';
 import { reportAPI } from '../services/api';
+import MilkMasterLog from './MilkMasterLog';
+import FeedMasterLog from './FeedMasterLog';
 import './MasterReport.css';
 
 function MasterReport() {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('general');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [data, setData] = useState([]);
@@ -56,20 +59,8 @@ function MasterReport() {
     document.body.removeChild(link);
   };
 
-  return (
-    <div className="master-report-page">
-      <div className="dashboard-header-modern">
-        <div className="header-left">
-          <button className="back-btn" onClick={() => navigate(-1)}>
-            <ArrowLeft size={20} />
-          </button>
-          <div>
-            <h1>Farm Master Report</h1>
-            <p>Historical aggregated data analysis</p>
-          </div>
-        </div>
-      </div>
-
+  const renderGeneralReport = () => (
+    <>
       <div className="report-controls-card">
         <div className="date-range-selector">
           <div className="date-field">
@@ -156,6 +147,33 @@ function MasterReport() {
             </tbody>
           </table>
         )}
+      </div>
+    </>
+  );
+
+  return (
+    <div className="master-report-page">
+      <div className="dashboard-header-modern" style={{ paddingBottom: '0', borderBottom: '1px solid #e2e8f0', marginBottom: '24px' }}>
+        <div className="header-left" style={{ marginBottom: '16px' }}>
+          <button className="back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h1>Master Reports Hub</h1>
+            <p>Unified historical data viewer</p>
+          </div>
+        </div>
+        <div className="erp-tabs-container">
+          <button className={`erp-tab ${activeTab === 'general' ? 'active' : ''}`} onClick={() => setActiveTab('general')}>General Aggregated</button>
+          <button className={`erp-tab ${activeTab === 'milk' ? 'active' : ''}`} onClick={() => setActiveTab('milk')}>Milk Yield Log</button>
+          <button className={`erp-tab ${activeTab === 'feed' ? 'active' : ''}`} onClick={() => setActiveTab('feed')}>Farm Feed Log</button>
+        </div>
+      </div>
+
+      <div className="tab-content" style={{ paddingBottom: '40px' }}>
+        {activeTab === 'general' && renderGeneralReport()}
+        {activeTab === 'milk' && <MilkMasterLog isEmbedded={true} />}
+        {activeTab === 'feed' && <FeedMasterLog isEmbedded={true} />}
       </div>
     </div>
   );

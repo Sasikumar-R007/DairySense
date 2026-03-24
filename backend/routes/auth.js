@@ -26,10 +26,10 @@ router.post('/register', async (req, res) => {
 // Login user
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body; // Frontend variable is email but acts as emailOrPhone
     
     if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+      return res.status(400).json({ error: 'Mobile number/Email and password are required' });
     }
     
     const result = await loginUser(email, password);

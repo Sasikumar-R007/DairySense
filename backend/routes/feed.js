@@ -9,7 +9,8 @@ import {
   createFeedLog,
   getFeedLogByDate,
   getFeedItems,
-  getFeedCategories
+  getFeedCategories,
+  getAllFeedLogs
 } from '../services/feedService.js';
 import {
   getWeightGroups,
@@ -106,6 +107,17 @@ router.get('/log', async (req, res) => {
     console.error('Error fetching feed log:', error);
     const statusCode = error.message.includes('required') ? 400 : 500;
     res.status(statusCode).json({ error: error.message });
+  }
+});
+
+router.get('/all-logs', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const logs = await getAllFeedLogs(startDate, endDate);
+    res.json({ data: logs });
+  } catch (error) {
+    console.error('Error fetching all feed logs:', error);
+    res.status(500).json({ error: 'Failed to fetch feed records' });
   }
 });
 

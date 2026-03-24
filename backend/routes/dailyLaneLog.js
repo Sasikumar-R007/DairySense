@@ -13,6 +13,7 @@ import {
   handleEsp32Scan
 } from '../services/dailyLaneLogService.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { appendRow } from '../services/gsheetService.js';
 
 const router = express.Router();
 
@@ -82,6 +83,10 @@ router.post('/feed', async (req, res) => {
       cowType // Optional, will be fetched from cows table if not provided
     );
     
+    // Attempt GSheet sync softly
+    const todayStr = new Date().toISOString().split('T')[0];
+    appendRow('DailyLogs', [todayStr, laneNo, cowId, 'Feed', feedKg, cowType || 'normal']).catch(e => console.error('GSheet Sync error', e));
+
     res.json({ message: 'Feed recorded successfully', data: result });
   } catch (error) {
     console.error('Error recording feed:', error);
@@ -108,6 +113,10 @@ router.post('/milk-yield', async (req, res) => {
     
     await recordMilkYield(cowId, session, parseFloat(yieldL));
     
+    // Attempt GSheet sync softly
+    const todayStr = new Date().toISOString().split('T')[0];
+    appendRow('DailyLogs', [todayStr, '', cowId, `Milk (${session})`, yieldL, '']).catch(e => console.error('GSheet Sync error', e));
+
     res.json({ message: `${session} yield recorded successfully` });
   } catch (error) {
     console.error('Error recording milk yield:', error);

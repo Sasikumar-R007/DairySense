@@ -176,6 +176,18 @@ export const feedAPI = {
     const response = await apiRequest(`/feed/recommendation/${encodeURIComponent(cowId)}`);
     return response.data;
   },
+
+  getAllFeedLogs: async (startDate = '', endDate = '') => {
+    let query = '';
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    if (params.toString()) {
+      query = `?${params.toString()}`;
+    }
+    const response = await apiRequest(`/feed/all-logs${query}`);
+    return response.data;
+  },
 };
 
 /**
@@ -196,6 +208,18 @@ export const milkAPI = {
 
   getMilkLogByCow: async (cowId) => {
     const response = await apiRequest(`/milk/cow/${encodeURIComponent(cowId)}`);
+    return response.data;
+  },
+
+  getAllMilkLogs: async (startDate = '', endDate = '') => {
+    let query = '';
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    if (params.toString()) {
+      query = `?${params.toString()}`;
+    }
+    const response = await apiRequest(`/milk/all-logs${query}`);
     return response.data;
   },
 };
@@ -299,6 +323,35 @@ export const reportAPI = {
   getMasterReport: async (from, to) => {
     const response = await apiRequest(`/report/master?from=${from}&to=${to}`);
     return response.data;
+  }
+};
+
+/**
+ * User API
+ */
+export const userAPI = {
+  getAllUsers: async () => {
+    return apiRequest('/users');
+  },
+  
+  createUser: async (userData) => {
+    return apiRequest('/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  },
+  
+  updateUser: async (id, userData) => {
+    return apiRequest(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  },
+  
+  deleteUser: async (id) => {
+    return apiRequest(`/users/${id}`, {
+      method: 'DELETE',
+    });
   }
 };
 

@@ -294,8 +294,21 @@ function CowDetails() {
           ) : (
             <div className="info-grid">
               <div className="info-item">
-                <label>Cow ID:</label>
-                <span className="cow-id-value">{cow.cow_id}</span>
+                <label>Cow ID (V2):</label>
+                <span className="cow-id-value">{cow.cow_id.toUpperCase().startsWith('COW') ? 'N/A (Legacy)' : cow.cow_id}</span>
+              </div>
+              <div className="info-item">
+                <label>Original ID:</label>
+                <span className="cow-id-value">{cow.cow_id.toUpperCase().startsWith('COW') ? cow.cow_id : (cow.cow_tag ? `COW${String(cow.cow_tag).padStart(3, '0')}` : 'N/A')}</span>
+              </div>
+
+              <div className="info-item">
+                <label>RFID Tag:</label>
+                <span>{cow.rfid_uid || "N/A"}</span>
+              </div>
+              <div className="info-item">
+                <label>Ear Tag:</label>
+                <span>{cow.cow_tag || "N/A"}</span>
               </div>
               <div className="info-item">
                 <label>Name:</label>
@@ -392,20 +405,21 @@ function CowDetails() {
           </section>
         )}
 
+
         {/* Milk Yield Graph */}
         {milkHistory.length > 0 && (
           <section className="details-section">
             <h3>Milk Yield History</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={milkHistory}>
+              <LineChart data={milkHistory}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="morning" fill="#4caf50" name="Morning (L)" />
-                <Bar dataKey="evening" fill="#2196f3" name="Evening (L)" />
-              </BarChart>
+                <Line type="monotone" dataKey="morning" stroke="#4caf50" strokeWidth={2} name="Morning (L)" />
+                <Line type="monotone" dataKey="evening" stroke="#2196f3" strokeWidth={2} name="Evening (L)" />
+              </LineChart>
             </ResponsiveContainer>
           </section>
         )}
@@ -471,4 +485,5 @@ function CowDetails() {
 }
 
 export default CowDetails;
+
 

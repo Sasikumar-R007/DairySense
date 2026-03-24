@@ -4,7 +4,7 @@ import { ArrowLeft, RefreshCw, Milk, Wheat, Users, Activity, TrendingUp, Trendin
 import { dashboardAPI, reportAPI } from '../services/api';
 import './SmartDashboard.css';
 
-function SmartDashboard() {
+function SmartDashboard({ isEmbedded = false }) {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -57,8 +57,9 @@ function SmartDashboard() {
   };
 
   return (
-    <div className="smart-dashboard-page">
-      <div className="dashboard-header-modern">
+    <div className={`smart-dashboard-page ${isEmbedded ? 'embedded' : ''}`} style={isEmbedded ? { padding: '0 40px 24px', minHeight: 'auto', background: 'transparent' } : {}}>
+      {!isEmbedded && (
+        <div className="dashboard-header-modern">
         <button type="button" className="modern-back-btn" onClick={() => navigate(-1)}>
           <ArrowLeft size={20} />
           <span>Back</span>
@@ -85,23 +86,33 @@ function SmartDashboard() {
             <Database size={18} />
             <span className="hide-mobile">Master Report</span>
           </button>
+          <button type="button" className="modern-download-btn secondary" onClick={() => navigate('/milk-master-log')}>
+            <Database size={18} />
+            <span className="hide-mobile">Master Milk</span>
+          </button>
+          <button type="button" className="modern-download-btn secondary" onClick={() => navigate('/feed-master-log')}>
+            <Database size={18} />
+            <span className="hide-mobile">Master Feed</span>
+          </button>
           <button type="button" className="modern-download-btn" onClick={() => setShowConfirmModal(true)} disabled={downloading}>
             {downloading ? <div className="spinner-small"></div> : <Download size={18} />}
             <span className="hide-mobile">PDF Report</span>
           </button>
         </div>
-      </div>
+        </div>
+      )}
 
       {error && <div className="error-banner">{error}</div>}
 
-      {loading && !data ? (
+      {loading && !data && (
         <div className="loading-state-modern">
           <div className="spinner"></div>
           <p>Loading farm insights...</p>
         </div>
-      ) : (
-        data && (
-          <div className="dashboard-grid">
+      )}
+      
+      {!loading && data && (
+        <div className="dashboard-grid">
             
             {/* Milk Summary Card */}
             <div className="kpi-card milk-card">
@@ -233,7 +244,6 @@ function SmartDashboard() {
             </div>
 
           </div>
-        )
       )}
     </div>
   );

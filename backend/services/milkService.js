@@ -181,3 +181,45 @@ export async function getMilkLogByCow(cowId) {
 
   return result.rows;
 }
+
+export async function getAllMilkLogs(startDate, endDate) {
+  let queryStr = `
+    SELECT
+        m.id,
+        m.date,
+        m.cow_id,
+        m.session,
+        m.milk_qty_kg,
+        m.milk_qty_litre,
+        m.recorded_at,
+        m.notes,
+        m.created_at,
+        c.cow_tag,
+        c.name,
+        c.breed
+     FROM milk_yield_log m
+     LEFT JOIN cows c ON c.cow_id = m.cow_id
+  `;
+
+  const queryParams = [];
+  const conditions = [];
+
+  if (startDate) {
+    queryParams.push(startDate);
+    conditions.push(`m.date >= $${queryParams.length}`);
+  }
+
+  if (endDate) {
+    queryParams.push(endDate);
+    conditions.push(`m.date <= $${queryParams.length}`);
+  }
+
+  if (conditions.length > 0) {
+    queryStr += ` WHERE ` + conditions.join(' AND ');
+  }
+
+  queryStr += ` ORDER BY m.date DESC, m.recorded_at DESC, m.session ASC, m.id DESC`;
+
+  const result = await pool.query(queryStr, queryParams);
+  return result.rows;
+}

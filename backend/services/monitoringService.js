@@ -511,3 +511,31 @@ export async function getHistoryLog(fromDate, toDate) {
   }));
 }
 
+/**
+ * Gets farm-level Yield-to-Feed ratio history for recent days
+ */
+export async function getRatioHistory(days = 30) {
+  const fromDate = new Date();
+  fromDate.setDate(fromDate.getDate() - days);
+  const fromDateStr = fromDate.toISOString().split('T')[0];
+
+  const result = await pool.query(`
+    SELECT 
+      date,
+      SUM(feed_given_kg) as total_feed,
+      SUM(total_yield_l) as total_milk
+    FROM daily_lane_log
+    WHERE date >= $1
+    GROUP BY date
+    ORDER BY date ASC
+  `, [fromDateStr]);
+  
+  return result.rows.map(row => {
+    const feed = parseFloat(row.total_feed || 0);
+    const milk = parseFloat(row.total_milk || 0);
+    return {
+      date: row.date.toISOString().split('T')[0],
+      ratio: feed > 0 ? parseFloat((milk / feed).toFixed(2)) : 0
+    };
+  });
+}

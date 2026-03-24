@@ -15,16 +15,18 @@ import {
 } from 'lucide-react';
 import { monitoringAPI } from '../services/monitoringAPI';
 import { useAuth } from '../context/AuthContext';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './MonitoringDashboard.css';
 
 function MonitoringDashboard() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, currentUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [viewScope, setViewScope] = useState('daily');
   const [error, setError] = useState('');
+  const [ratioHistory, setRatioHistory] = useState([]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -34,11 +36,14 @@ function MonitoringDashboard() {
     try {
       setLoading(true);
       setError('');
-      const result = await monitoringAPI.getDashboard(
-        viewScope === 'daily' ? selectedDate : null,
-        viewScope
-      );
+      
+      const [result, ratioHistoryRes] = await Promise.all([
+        monitoringAPI.getDashboard(viewScope === 'daily' ? selectedDate : null, viewScope),
+        monitoringAPI.getRatioHistory(30)
+      ]);
+      
       setData(result);
+      setRatioHistory(ratioHistoryRes.data || []);
     } catch (err) {
       console.error('Error fetching dashboard:', err);
       if (
@@ -109,6 +114,10 @@ function MonitoringDashboard() {
   const firstRecordedDate = data.firstRecordedDate || null;
   const lastRecordedDate = data.lastRecordedDate || null;
 
+  const isWorker = currentUser?.role === 'worker';
+  const perms = currentUser?.permissions || {};
+  const canManageSettings = !isWorker || perms.canManageSettings;
+
   const actions = [
     {
       label: 'Cow Performance',
@@ -174,13 +183,15 @@ function MonitoringDashboard() {
               />
             </div>
           )}
-          <button
-            className="settings-icon-button"
-            onClick={() => navigate('/settings')}
-            aria-label="Settings"
-          >
-            <Settings size={18} />
-          </button>
+          {canManageSettings && (
+            <button
+              className="settings-icon-button"
+              onClick={() => navigate('/settings')}
+              aria-label="Settings"
+            >
+              <Settings size={18} />
+            </button>
+          )}
           <button className="logout-button" onClick={handleLogout}>
             Logout
           </button>
@@ -283,6 +294,24 @@ function MonitoringDashboard() {
             </div>
           </div>
         </div>
+        
+        {ratioHistory.length > 0 && (
+          <div className="ratio-history-panel" style={{ marginTop: '24px', backgroundColor: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+            <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
+              <BarChart3 size={20} /> Yield-to-Feed Ratio History (30 Days)
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={ratioHistory}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="ratio" stroke="#f59e0b" strokeWidth={3} name="Yield/Feed Ratio" dot={false} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
     </div>
   );

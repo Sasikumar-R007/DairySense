@@ -72,11 +72,89 @@ export async function initializeSchema() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
-        email VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE,
+        phone_number VARCHAR(20) UNIQUE,
+        name VARCHAR(255),
+        role VARCHAR(20) DEFAULT 'admin',
+        permissions JSONB DEFAULT '{}'::jsonb,
         password_hash VARCHAR(255) NOT NULL,
+        last_login_at TIMESTAMP,
+        last_active_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Make email nullable for existing databases
+    await client.query(`
+      ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
+    `);
+
+    // Add new columns if they don't exist (for existing databases)
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'users' AND column_name = 'last_login_at'
+        ) THEN
+          ALTER TABLE users ADD COLUMN last_login_at TIMESTAMP;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'users' AND column_name = 'last_active_at'
+        ) THEN
+          ALTER TABLE users ADD COLUMN last_active_at TIMESTAMP;
+        END IF;
+      END $$;
+    `);
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'users' AND column_name = 'phone_number'
+        ) THEN
+          ALTER TABLE users ADD COLUMN phone_number VARCHAR(20) UNIQUE;
+        END IF;
+      END $$;
+    `);
+
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'users' AND column_name = 'name'
+        ) THEN
+          ALTER TABLE users ADD COLUMN name VARCHAR(255);
+        END IF;
+      END $$;
+    `);
+
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'users' AND column_name = 'role'
+        ) THEN
+          ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'admin';
+        END IF;
+      END $$;
+    `);
+
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'users' AND column_name = 'permissions'
+        ) THEN
+          ALTER TABLE users ADD COLUMN permissions JSONB DEFAULT '{}'::jsonb;
+        END IF;
+      END $$;
     `);
 
     // Create cows table (master data)
@@ -248,9 +326,31 @@ export async function initializeSchema() {
         category_id INTEGER NOT NULL REFERENCES feed_category_master(id) ON DELETE CASCADE,
         item_name VARCHAR(255) NOT NULL,
         default_unit VARCHAR(50) DEFAULT 'kg',
+        default_cost_per_unit DECIMAL(10, 2) DEFAULT 0.00,
+        default_source VARCHAR(50) DEFAULT 'Purchased',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(category_id, item_name)
       )
+    `);
+
+    // Add new columns to existing feed_item_master
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'feed_item_master' AND column_name = 'default_cost_per_unit'
+        ) THEN
+          ALTER TABLE feed_item_master ADD COLUMN default_cost_per_unit DECIMAL(10, 2) DEFAULT 0.00;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'feed_item_master' AND column_name = 'default_source'
+        ) THEN
+          ALTER TABLE feed_item_master ADD COLUMN default_source VARCHAR(50) DEFAULT 'Purchased';
+        END IF;
+      END $$;
     `);
 
     // Create farm-level feed log
@@ -508,22 +608,25 @@ export async function initializeSchema() {
       ON CONFLICT (category_name) DO NOTHING
     `);
 
-    // Seed feed items
+    // Seed feed items (with default prices & sources for auto-calc)
     await client.query(`
-      INSERT INTO feed_item_master (category_id, item_name, default_unit)
-      SELECT c.id, seed.item_name, seed.default_unit
+      INSERT INTO feed_item_master (category_id, item_name, default_unit, default_cost_per_unit, default_source)
+      SELECT c.id, seed.item_name, seed.default_unit, seed.default_cost_per_unit, seed.default_source
       FROM (
         VALUES
-          ('Concentrated Feed', 'Husk (Channa)', 'kg'),
-          ('Concentrated Feed', 'Orid Husk', 'kg'),
-          ('Concentrated Feed', 'Groundnut Cake', 'kg'),
-          ('Concentrated Feed', 'Corn Flour', 'kg'),
-          ('Concentrated Feed', 'Rice Bran', 'kg'),
-          ('Dry Fodder', 'Hay Stack', 'kg'),
-          ('Concentrated Feed', 'SKM Cattle Feed', 'kg')
-      ) AS seed(category_name, item_name, default_unit)
+          ('Concentrated Feed', 'Husk (Channa)', 'kg', 25.00, 'Purchased'),
+          ('Concentrated Feed', 'Orid Husk', 'kg', 22.00, 'Purchased'),
+          ('Concentrated Feed', 'Groundnut Cake', 'kg', 45.00, 'Purchased'),
+          ('Concentrated Feed', 'Corn Flour', 'kg', 20.00, 'Purchased'),
+          ('Concentrated Feed', 'Rice Bran', 'kg', 15.00, 'Purchased'),
+          ('Dry Fodder', 'Hay Stack', 'kg', 8.00, 'Farm Produced'),
+          ('Concentrated Feed', 'SKM Cattle Feed', 'kg', 28.00, 'Purchased')
+      ) AS seed(category_name, item_name, default_unit, default_cost_per_unit, default_source)
       JOIN feed_category_master c ON c.category_name = seed.category_name
-      ON CONFLICT (category_id, item_name) DO NOTHING
+      ON CONFLICT (category_id, item_name) DO UPDATE 
+      SET default_cost_per_unit = EXCLUDED.default_cost_per_unit,
+          default_source = EXCLUDED.default_source
+      WHERE feed_item_master.default_cost_per_unit = 0.00
     `);
 
     // Seed weight groups

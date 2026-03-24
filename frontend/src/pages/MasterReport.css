@@ -183,3 +183,38 @@
     width: 100%;
   }
 }
+
+/* Tab Styles */
+.erp-tabs-container {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.erp-tabs-container::-webkit-scrollbar {
+  display: none;
+}
+
+.erp-tab {
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  margin-bottom: -1px;
+}
+
+.erp-tab:hover {
+  color: #0f172a;
+  border-bottom-color: #cbd5e1;
+}
+
+.erp-tab.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}

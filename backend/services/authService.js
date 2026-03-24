@@ -12,15 +12,15 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 /**
  * Register a new user
  */
-export async function registerUser(email, password) {
+export async function registerUser(email, password, name = null, phoneNumber = null, role = 'admin', permissions = '{}') {
   // Check if user already exists
   const existingUser = await pool.query(
-    'SELECT id FROM users WHERE email = $1',
-    [email]
+    'SELECT id FROM users WHERE (email = $1 AND email IS NOT NULL) OR (phone_number = $2 AND phone_number IS NOT NULL)',
+    [email, phoneNumber]
   );
   
   if (existingUser.rows.length > 0) {
-    throw new Error('User with this email already exists');
+    throw new Error('User with this email or phone number already exists');
   }
   
   // Hash password
@@ -28,10 +28,10 @@ export async function registerUser(email, password) {
   
   // Create user
   const result = await pool.query(
-    `INSERT INTO users (email, password_hash) 
-     VALUES ($1, $2) 
-     RETURNING id, email, created_at`,
-    [email, passwordHash]
+    `INSERT INTO users (email, phone_number, name, role, permissions, password_hash) 
+     VALUES ($1, $2, $3, $4, $5, $6) 
+     RETURNING id, email, phone_number, name, role, permissions, created_at`,
+    [email, phoneNumber, name, role, permissions, passwordHash]
   );
   
   return result.rows[0];
@@ -40,15 +40,15 @@ export async function registerUser(email, password) {
 /**
  * Authenticate user and return JWT token
  */
-export async function loginUser(email, password) {
+export async function loginUser(emailOrPhone, password) {
   // Find user
   const result = await pool.query(
-    'SELECT id, email, password_hash FROM users WHERE email = $1',
-    [email]
+    'SELECT id, email, phone_number, name, role, permissions, password_hash FROM users WHERE email = $1 OR phone_number = $1',
+    [emailOrPhone]
   );
   
   if (result.rows.length === 0) {
-    throw new Error('Invalid email or password');
+    throw new Error('Invalid mobile number, email, or password');
   }
   
   const user = result.rows[0];
@@ -57,21 +57,37 @@ export async function loginUser(email, password) {
   const isValid = await bcrypt.compare(password, user.password_hash);
   
   if (!isValid) {
-    throw new Error('Invalid email or password');
+    throw new Error('Invalid mobile number, email, or password');
   }
   
   // Generate JWT token
   const token = jwt.sign(
-    { userId: user.id, email: user.email },
+    { 
+      userId: user.id, 
+      email: user.email,
+      phoneNumber: user.phone_number,
+      role: user.role,
+      permissions: user.permissions
+    },
     JWT_SECRET,
     { expiresIn: '7d' }
+  );
+  
+  // Track last login
+  await pool.query(
+    'UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = $1',
+    [user.id]
   );
   
   return {
     token,
     user: {
       id: user.id,
-      email: user.email
+      email: user.email,
+      phoneNumber: user.phone_number,
+      name: user.name,
+      role: user.role,
+      permissions: user.permissions
     }
   };
 }

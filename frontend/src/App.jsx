@@ -3,6 +3,8 @@ import { AuthProvider } from './context/AuthContext';
 import Dashboard from './pages/Dashboard';
 import LandingPage from './pages/LandingPage';
 import MasterReport from './pages/MasterReport';
+import MilkMasterLog from './pages/MilkMasterLog';
+import FeedMasterLog from './pages/FeedMasterLog';
 import FeedLog from './pages/FeedLog';
 import MilkYieldLog from './pages/MilkYieldLog';
 import FeedRecommendation from './pages/FeedRecommendation';
@@ -19,7 +21,9 @@ import HistoryLog from './pages/HistoryLog';
 import Settings from './pages/Settings';
 import FarmActivities from './pages/FarmActivities';
 import SmartDashboard from './pages/SmartDashboard';
+import WorkerManagement from './pages/WorkerManagement';
 import ProtectedRoute from './components/ProtectedRoute';
+import Layout from './components/Layout';
 import './App.css';
 
 function App() {
@@ -28,149 +32,35 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <SmartDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/feed-log"
-            element={
-              <ProtectedRoute>
-                <FeedLog />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/milk-log"
-            element={
-              <ProtectedRoute>
-                <MilkYieldLog />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/feed-recommendation"
-            element={
-              <ProtectedRoute>
-                <FeedRecommendation />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/medicine-log"
-            element={
-              <ProtectedRoute>
-                <MedicineLog />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/add-cow"
-            element={
-              <ProtectedRoute>
-                <AddCow />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/cows"
-            element={
-              <ProtectedRoute>
-                <CowsList />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/cow-details/:cowId"
-            element={
-              <ProtectedRoute>
-                <CowDetails />
-              </ProtectedRoute>
-            }
-          />
-          {/* Public read-only route for QR code access */}
-          <Route path="/cow/:cowId" element={<CowPublicProfile />} />
-          <Route path="/cow" element={<CowPublicProfile />} />
-          
-          <Route
-            path="/record-management"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+          {/* Layout-wrapped authenticated routes */}
+          <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/feed-log" element={<FeedLog />} />
+            <Route path="/milk-log" element={<MilkYieldLog />} />
+            <Route path="/feed-recommendation" element={<FeedRecommendation />} />
+            <Route path="/medicine-log" element={<MedicineLog />} />
+            <Route path="/add-cow" element={<AddCow />} />
+            <Route path="/cows" element={<CowsList />} />
+            <Route path="/cow-details/:cowId" element={<CowDetails />} />
+            
+            {/* Monitoring Sub-routes */}
+            <Route path="/monitoring" element={<MonitoringDashboard />} />
+            <Route path="/monitoring/cows" element={<MonitoringCowList />} />
+            <Route path="/monitoring/cows/:cowId" element={<MonitoringCowDetail />} />
+            <Route path="/monitoring/summary" element={<DailySummary />} />
+            <Route path="/monitoring/history" element={<HistoryLog />} />
+            
+            {/* Admin Routes */}
+            <Route path="/settings" element={<ProtectedRoute requireAdmin={true}><Settings /></ProtectedRoute>} />
+            <Route path="/worker-management" element={<ProtectedRoute requireAdmin={true}><WorkerManagement /></ProtectedRoute>} />
+            
+            {/* Other Operations */}
+            <Route path="/farm-activities" element={<FarmActivities />} />
+            <Route path="/master-report" element={<MasterReport />} />
+            <Route path="/milk-master-log" element={<MilkMasterLog />} />
+            <Route path="/feed-master-log" element={<FeedMasterLog />} />
+          </Route>
 
-          {/* Monitoring Module Routes */}
-          <Route
-            path="/monitoring"
-            element={
-              <ProtectedRoute>
-                <MonitoringDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/monitoring/cows"
-            element={
-              <ProtectedRoute>
-                <MonitoringCowList />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/monitoring/cows/:cowId"
-            element={
-              <ProtectedRoute>
-                <MonitoringCowDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/monitoring/summary"
-            element={
-              <ProtectedRoute>
-                <DailySummary />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/monitoring/history"
-            element={
-              <ProtectedRoute>
-                <HistoryLog />
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/farm-activities"
-            element={
-              <ProtectedRoute>
-                <FarmActivities />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/master-report"
-            element={
-              <ProtectedRoute>
-                <MasterReport />
-              </ProtectedRoute>
-            }
-          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

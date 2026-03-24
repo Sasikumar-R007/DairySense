@@ -147,3 +147,46 @@ export async function getFeedLogByDate(date) {
 
   return result.rows;
 }
+
+export async function getAllFeedLogs(startDate, endDate) {
+  let queryStr = `
+    SELECT
+        l.id,
+        l.date,
+        l.feed_item_id,
+        c.id as category_id,
+        c.category_name,
+        i.item_name,
+        i.default_unit,
+        l.quantity_kg,
+        l.cost_per_unit,
+        l.total_amount,
+        l.input_source,
+        l.created_at
+     FROM feed_log l
+     JOIN feed_item_master i ON i.id = l.feed_item_id
+     JOIN feed_category_master c ON c.id = i.category_id
+  `;
+
+  const queryParams = [];
+  const conditions = [];
+
+  if (startDate) {
+    queryParams.push(startDate);
+    conditions.push(`l.date >= $${queryParams.length}`);
+  }
+
+  if (endDate) {
+    queryParams.push(endDate);
+    conditions.push(`l.date <= $${queryParams.length}`);
+  }
+
+  if (conditions.length > 0) {
+    queryStr += ` WHERE ` + conditions.join(' AND ');
+  }
+
+  queryStr += ` ORDER BY l.date DESC, c.category_name ASC, i.item_name ASC, l.id DESC`;
+
+  const result = await pool.query(queryStr, queryParams);
+  return result.rows;
+}
