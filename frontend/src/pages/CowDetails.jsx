@@ -294,11 +294,11 @@ function CowDetails() {
           ) : (
             <div className="info-grid">
               <div className="info-item">
-                <label>Cow ID (V2):</label>
+                <label>System ID:</label>
                 <span className="cow-id-value">{cow.cow_id.toUpperCase().startsWith('COW') ? 'N/A (Legacy)' : cow.cow_id}</span>
               </div>
               <div className="info-item">
-                <label>Original ID:</label>
+                <label>Tag ID:</label>
                 <span className="cow-id-value">{cow.cow_id.toUpperCase().startsWith('COW') ? cow.cow_id : (cow.cow_tag ? `COW${String(cow.cow_tag).padStart(3, '0')}` : 'N/A')}</span>
               </div>
 

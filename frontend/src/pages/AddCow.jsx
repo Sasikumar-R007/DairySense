@@ -26,7 +26,9 @@ function AddCow() {
     purchase_date: '',
     last_vaccination_date: '',
     next_vaccination_date: '',
-    notes: ''
+    notes: '',
+    custom_breed: '',
+    status: 'ACTIVE'
   });
   
   const [rfidLinkingState, setRfidLinkingState] = useState({
@@ -56,8 +58,11 @@ function AddCow() {
   };
 
   const generateCowId = async (overrideData = {}) => {
+    const rawBreed = overrideData.breed ?? formData.breed;
+    const effectiveBreed = rawBreed === 'Other' ? (overrideData.custom_breed ?? formData.custom_breed) : rawBreed;
+
     const generationData = {
-      breed: overrideData.breed ?? formData.breed,
+      breed: effectiveBreed,
       purchaseDate: overrideData.purchase_date ?? formData.purchase_date,
       sourceType: overrideData.source_type ?? formData.source_type
     };
@@ -92,7 +97,7 @@ function AddCow() {
 
     setFormData(nextFormData);
 
-    if (name === 'breed' || name === 'purchase_date' || name === 'source_type') {
+    if (name === 'breed' || name === 'custom_breed' || name === 'purchase_date' || name === 'source_type') {
       generateCowId(nextFormData);
     }
   };
@@ -118,7 +123,9 @@ function AddCow() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.breed || !formData.purchase_date || !formData.source_type || !formData.weight_kg) {
+    const finalBreed = formData.breed === 'Other' ? formData.custom_breed : formData.breed;
+
+    if (!finalBreed || !formData.purchase_date || !formData.source_type || !formData.weight_kg) {
       showMessage('error', 'Breed, Purchase Date, Source Type, and Weight are required');
       return;
     }
@@ -135,8 +142,12 @@ function AddCow() {
 
     setLoading(true);
     try {
-      const response = await cowsAPI.createCow({
+      const submitData = {
         ...formData,
+        breed: formData.breed === 'Other' ? formData.custom_breed : formData.breed
+      };
+      const response = await cowsAPI.createCow({
+        ...submitData,
         name: formData.cow_id
       });
       const cowId = response.data.cow_id;
@@ -648,19 +659,52 @@ function AddCow() {
 
               <div className="form-group">
                 <label htmlFor="breed">Breed *</label>
-                <input
+                <select
                   id="breed"
-                  type="text"
                   name="breed"
                   value={formData.breed}
                   onChange={handleInputChange}
-                  placeholder="Enter breed"
                   required
-                />
+                >
+                  <option value="">Select Breed</option>
+                  <option value="HF">HF</option>
+                  <option value="Jersey">Jersey</option>
+                  <option value="Gir">Gir</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
+              
+              {formData.breed === 'Other' && (
+                <div className="form-group">
+                  <label htmlFor="custom_breed">Specify Breed *</label>
+                  <input
+                    id="custom_breed"
+                    type="text"
+                    name="custom_breed"
+                    value={formData.custom_breed}
+                    onChange={handleInputChange}
+                    placeholder="Enter custom breed name"
+                    required
+                  />
+                </div>
+              )}
             </div>
 
             <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="status">Status *</label>
+                <select
+                  id="status"
+                  name="status"
+                  value={formData.status}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="ACTIVE">Active</option>
+                  <option value="INACTIVE">Inactive</option>
+                </select>
+              </div>
+
               <div className="form-group">
                 <label htmlFor="weight_kg">Weight (kg) *</label>
                 <input

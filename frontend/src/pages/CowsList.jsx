@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { cowsAPI } from '../services/cowsAPI';
 import './CowsList.css';
 
@@ -134,7 +134,8 @@ function CowsList() {
             <table className="cows-table">
               <thead>
                 <tr>
-                  <th>Cow ID</th>
+                  <th>Tag ID</th>
+                  <th>System ID</th>
                   <th>Name</th>
                   <th>Type</th>
                   <th>Breed</th>
@@ -146,7 +147,10 @@ function CowsList() {
               <tbody>
                 {filteredCows.map((cow) => (
                   <tr key={cow.cow_id}>
-                    <td className="cow-id-cell">{cow.cow_id}</td>
+                    <td className="cow-tag-cell" style={{ fontWeight: '600', color: '#0f172a' }}>
+                      {cow.cow_id.toUpperCase().startsWith('COW') ? cow.cow_id : (cow.cow_tag ? `COW${String(cow.cow_tag).padStart(3, '0')}` : '-')}
+                    </td>
+                    <td className="cow-id-cell" style={{ fontSize: '13px', color: '#64748b' }}>{cow.cow_id}</td>
                     <td>{cow.name || '-'}</td>
                     <td>
                       <span className={`cow-type-badge ${cow.cow_type || 'normal'}`}>
