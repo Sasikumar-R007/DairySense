@@ -1,8 +1,8 @@
 /* SaaS ERP Style UI for Worker Management */
 
 .worker-management-page {
-  padding: 32px 40px;
-  max-width: 1400px;
+  padding: 32px 24px;
+  max-width: 100%;
   margin: 0 auto;
   min-height: 100vh;
   background-color: #f8fafc;
@@ -426,7 +426,15 @@
 .erp-alert.info { background-color: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; }
 
 @media (max-width: 768px) {
-  .worker-management-page { padding: 20px; }
+  .worker-management-page { padding: 16px; }
   .header-main-row { flex-direction: column; align-items: flex-start; gap: 16px; }
-  .header-actions { width: 100%; justify-content: space-between; }
+  .header-actions { width: 100%; justify-content: stretch; flex-direction: column; }
+  .header-actions button { width: 100%; justify-content: center; }
+  
+  .erp-table th, .erp-table td { padding: 12px 10px; font-size: 13px; }
+  .erp-table { white-space: nowrap; }
+  
+  .modal-body { padding: 16px; }
+  .modal-footer { padding: 16px; flex-direction: column; }
+  .modal-footer button { width: 100%; }
 }

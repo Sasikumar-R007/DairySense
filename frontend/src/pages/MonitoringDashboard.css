@@ -131,7 +131,7 @@
 .monitoring-content {
   max-width: 100%;
   margin: 0 auto;
-  padding: 0 0.5rem;
+  padding: 0 40px;
 }
 
 .summary-date-banner {
@@ -349,9 +349,8 @@
 }
 
 @media (max-width: 768px) {
-  .monitoring-dashboard {
-    padding: 0.5rem;
-  }
+  .monitoring-content { padding: 0 20px; }
+  .monitoring-dashboard { padding: 0.5rem; }
 
   .monitoring-header {
     flex-direction: column;

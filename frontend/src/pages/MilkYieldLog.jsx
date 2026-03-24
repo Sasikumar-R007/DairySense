@@ -173,14 +173,30 @@ function MilkYieldLog() {
         )}
 
         <div className="milk-yield-toolbar">
-          <div className="milk-yield-field">
-            <label htmlFor="milk-log-date">Select Date</label>
-            <input
-              id="milk-log-date"
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-            />
+          <div className="milk-yield-field" style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
+            <div>
+              <label htmlFor="milk-log-date" style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '600', color: '#475569' }}>Select Date</label>
+              <input
+                id="milk-log-date"
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                style={{ padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px' }}
+              />
+            </div>
+            <button 
+              type="button" 
+              className="save-milk-log-button" 
+              onClick={handleSave} 
+              disabled={saving}
+              style={{
+                background: '#2563eb', color: 'white', border: 'none', padding: '10px 20px', 
+                borderRadius: '8px', fontWeight: '600', cursor: saving ? 'not-allowed' : 'pointer',
+                opacity: saving ? 0.7 : 1, boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)'
+              }}
+            >
+              {saving ? 'Saving...' : 'Save Milk Log'}
+            </button>
           </div>
         </div>
 
@@ -233,11 +249,7 @@ function MilkYieldLog() {
               </table>
             </div>
 
-            <div className="milk-yield-actions">
-              <button type="button" className="save-milk-log-button" onClick={handleSave} disabled={saving}>
-                {saving ? 'Saving...' : 'Save Milk Log'}
-              </button>
-            </div>
+            {/* Button moved to toolbar */}
 
             <div className="saved-milk-section">
               <h2>Saved Milk Log</h2>

@@ -81,13 +81,15 @@ function Layout() {
 
         <div className="sidebar-scrollable">
           <nav className="erp-nav-menu">
-            <div className="nav-section">
-              <h3 className="nav-heading">Main Menu</h3>
-              <button className={`nav-item ${isActive('/dashboard')}`} onClick={() => navigate('/dashboard')}>
-                <LayoutDashboard size={18} />
-                <span>Command Center</span>
-              </button>
-            </div>
+            {!isWorker && (
+              <div className="nav-section">
+                <h3 className="nav-heading">Main Menu</h3>
+                <button className={`nav-item ${isActive('/dashboard')}`} onClick={() => navigate('/dashboard')}>
+                  <LayoutDashboard size={18} />
+                  <span>Command Center</span>
+                </button>
+              </div>
+            )}
 
             <div className="nav-section">
               <h3 className="nav-heading">Livestock Management</h3>

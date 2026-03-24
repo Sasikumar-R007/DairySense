@@ -83,10 +83,12 @@ function WorkerManagement() {
   };
 
   const openAdminModal = () => {
-    const adminData = users.find(u => u.id === currentUser.userId) || currentUser;
+    // Find admin user flexibly to prevent empty fallback fields
+    const adminData = users.find(u => String(u.id) === String(currentUser.userId || currentUser.id) || u.role === 'admin') || currentUser;
+    
     setFormData({
       name: adminData.name || '',
-      phoneNumber: adminData.phoneNumber || adminData.phone_number || '',
+      phoneNumber: adminData.phone_number || adminData.phoneNumber || '',
       email: adminData.email || '',
       password: '',
       permissions: adminData.permissions || defaultFormData.permissions
@@ -121,12 +123,18 @@ function WorkerManagement() {
   const handleSaveAdmin = async (e) => {
     e.preventDefault();
     try {
-      // Check if they are modifying critical credentials
-      const adminData = users.find(u => u.id === (currentUser.userId || currentUser.id)) || currentUser;
-      const originalPhone = adminData.phoneNumber || adminData.phone_number || '';
+      // Find admin Data flexibly
+      const adminData = users.find(u => String(u.id) === String(currentUser.userId || currentUser.id) || u.role === 'admin') || currentUser;
       
-      if (formData.phoneNumber !== originalPhone || formData.password !== '') {
-        if (!window.confirm("You are changing your primary login credentials (mobile number or password). If you proceed, you will need to restart your session with these new credentials. Are you sure?")) {
+      const originalPhone = adminData.phone_number || adminData.phoneNumber || '';
+      const originalEmail = adminData.email || '';
+      
+      const emailChanged = formData.email !== originalEmail;
+      const phoneChanged = formData.phoneNumber !== originalPhone;
+      const pwdChanged = formData.password && formData.password.trim() !== '';
+
+      if (emailChanged || phoneChanged || pwdChanged) {
+        if (!window.confirm("You are modifying critical login credentials (email, mobile number, or password). Are you sure you want to change these verified credentials?")) {
           return;
         }
       }
@@ -256,11 +264,6 @@ function WorkerManagement() {
   return (
     <div className="worker-management-page">
       <header className="page-header">
-        <div className="header-breadcrumbs">
-          <button className="back-btn-subtle" onClick={() => navigate('/dashboard')}>
-            <ArrowLeft size={18} /> Back to Dashboard
-          </button>
-        </div>
         <div className="header-main-row">
           <div>
             <h1>Worker Management</h1>

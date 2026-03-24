@@ -39,6 +39,8 @@ export async function getFeedItems() {
         c.category_name,
         i.item_name,
         i.default_unit,
+        i.default_cost_per_unit,
+        i.default_source,
         i.created_at
      FROM feed_item_master i
      JOIN feed_category_master c ON c.id = i.category_id

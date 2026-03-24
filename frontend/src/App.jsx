@@ -34,7 +34,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           {/* Layout-wrapped authenticated routes */}
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={<ProtectedRoute requireAdmin={true}><Dashboard /></ProtectedRoute>} />
             <Route path="/feed-log" element={<FeedLog />} />
             <Route path="/milk-log" element={<MilkYieldLog />} />
             <Route path="/feed-recommendation" element={<FeedRecommendation />} />

@@ -112,7 +112,7 @@ function Dashboard() {
         </div>
       </header>
 
-      <div className="monitoring-content" style={{ marginTop: '0', maxWidth: '100%', padding: '0 40px' }}>
+      <div className="monitoring-content-wrapper monitoring-content" style={{ marginTop: '0', maxWidth: '100%' }}>
         {/* Scope and Date Banner */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div className="scope-toggle" role="tablist">

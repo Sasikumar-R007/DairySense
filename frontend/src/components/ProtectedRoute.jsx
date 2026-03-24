@@ -9,7 +9,7 @@ function ProtectedRoute({ children, requireAdmin = false }) {
   }
 
   if (requireAdmin && currentUser.role === 'worker') {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/milk-log" replace />;
   }
 
   return children;

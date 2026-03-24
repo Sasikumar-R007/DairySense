@@ -42,7 +42,11 @@ function LandingPage() {
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
     if (currentUser && token && !location.state?.allowLanding) {
-      navigate('/dashboard', { replace: true });
+      if (currentUser.role === 'worker') {
+        navigate('/milk-log', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     }
   }, [currentUser, location.state, navigate]);
   const handleSubmit = async (e) => {
@@ -64,7 +68,9 @@ function LandingPage() {
         const userStr = localStorage.getItem('user');
         const userObj = userStr ? JSON.parse(userStr) : null;
         
-        if (userObj) {
+        if (userObj?.role === 'worker') {
+          navigate('/milk-log', { replace: true });
+        } else if (userObj) {
           navigate('/dashboard', { replace: true });
         }
       } else {

@@ -171,9 +171,11 @@
 }
 
 @media (max-width: 768px) {
+  .master-report-page { padding: 16px; }
   .report-controls-card {
     flex-direction: column;
     align-items: stretch;
+    padding: 16px;
   }
   .date-range-selector {
     flex-direction: column;
@@ -182,6 +184,9 @@
   .input-with-icon input {
     width: 100%;
   }
+  .report-table-container { padding: 12px; }
+  .master-table th, .master-table td { padding: 12px 10px; font-size: 13px; }
+  .master-table { white-space: nowrap; }
 }
 
 /* Tab Styles */
