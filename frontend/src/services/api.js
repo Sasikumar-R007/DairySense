@@ -352,6 +352,36 @@ export const userAPI = {
     return apiRequest(`/users/${id}`, {
       method: 'DELETE',
     });
+  },
+  
+  updateProfile: async (data) => {
+    return apiRequest('/users/profile/me', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+  
+  updatePassword: async (password) => {
+    return apiRequest('/users/password/me', {
+      method: 'PUT',
+      body: JSON.stringify({ password }),
+    });
   }
+};
+
+/**
+ * Settings API
+ */
+export const settingsAPI = {
+  getSettings: () => apiRequest('/settings'),
+  
+  updateSettings: (data) => apiRequest('/settings', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  
+  backupDatabase: () => apiRequest('/settings/backup', {
+    method: 'POST'
+  })
 };
 

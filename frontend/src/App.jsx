@@ -50,8 +50,8 @@ function App() {
             <Route path="/monitoring/summary" element={<DailySummary />} />
             <Route path="/monitoring/history" element={<HistoryLog />} />
             
-            {/* Admin Routes */}
-            <Route path="/settings" element={<ProtectedRoute requireAdmin={true}><Settings /></ProtectedRoute>} />
+            {/* User & Admin Routes */}
+            <Route path="/settings" element={<Settings />} />
             <Route path="/worker-management" element={<ProtectedRoute requireAdmin={true}><WorkerManagement /></ProtectedRoute>} />
             
             {/* Other Operations */}

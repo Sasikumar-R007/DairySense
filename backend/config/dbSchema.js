@@ -768,6 +768,24 @@ export async function initializeSchema() {
       ON daily_farm_summary(date)
     `);
 
+    // Create system_settings table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+        key VARCHAR(50) PRIMARY KEY,
+        value JSONB,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Seed default settings
+    await client.query(`
+      INSERT INTO system_settings (key, value) VALUES 
+        ('farm_profile', '{"name":"DairySense Farm","email":"","phone":""}'::jsonb),
+        ('alerts', '{"milk_drop_threshold":2.0,"low_feed_threshold":50,"low_medicine_threshold":10}'::jsonb),
+        ('hardware', '{"rfid_enabled":true,"qr_enabled":true}'::jsonb)
+      ON CONFLICT (key) DO NOTHING
+    `);
+
     console.log('✅ Database schema initialized');
   } catch (error) {
     console.error('❌ Error initializing schema:', error);

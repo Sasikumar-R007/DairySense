@@ -69,3 +69,23 @@ export async function deleteUser(id) {
 
   return { success: true };
 }
+
+export async function updateUserProfile(id, data) {
+  const { name, phoneNumber, email } = data;
+  const result = await pool.query(
+    'UPDATE users SET name = $1, phone_number = $2, email = $3 WHERE id = $4 RETURNING id, name, phone_number, email',
+    [name, phoneNumber || null, email || null, id]
+  );
+  if (result.rows.length === 0) throw new Error('User not found');
+  return result.rows[0];
+}
+
+export async function updateUserPassword(id, password) {
+  const passwordHash = await bcrypt.hash(password, 10);
+  const result = await pool.query(
+    'UPDATE users SET password_hash = $1 WHERE id = $2 RETURNING id',
+    [passwordHash, id]
+  );
+  if (result.rows.length === 0) throw new Error('User not found');
+  return { success: true };
+}

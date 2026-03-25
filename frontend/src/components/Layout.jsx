@@ -13,6 +13,7 @@ import {
   LogOut, 
   Database,
   Menu,
+  Settings as SettingsIcon,
   X
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -143,6 +144,10 @@ function Layout() {
                   <span>Master Reports</span>
                 </button>
               )}
+              <button className={`nav-item ${isActive('/settings')}`} onClick={() => navigate('/settings')}>
+                <SettingsIcon size={18} />
+                <span>Settings</span>
+              </button>
             </div>
           </nav>
         </div>

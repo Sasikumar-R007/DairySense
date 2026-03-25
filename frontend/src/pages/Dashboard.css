@@ -154,6 +154,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 0;
 }
 
 .user-name {
@@ -496,10 +497,11 @@
     top: 0;
     bottom: 0;
     left: 0;
-    height: 100vh;
+    height: 100%;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
     z-index: 30;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
   }
   
   .erp-sidebar.mobile-open {

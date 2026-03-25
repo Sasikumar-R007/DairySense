@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cowsAPI } from '../services/cowsAPI';
 import { milkAPI } from '../services/api';
 import './MilkYieldLog.css';
@@ -14,6 +14,16 @@ function MilkYieldLog() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [entriesByCow, setEntriesByCow] = useState({});
+
+  const changeDate = (days) => {
+    const [year, month, day] = selectedDate.split('-').map(Number);
+    const d = new Date(year, month - 1, day);
+    d.setDate(d.getDate() + days);
+    const newYear = d.getFullYear();
+    const newMonth = String(d.getMonth() + 1).padStart(2, '0');
+    const newDay = String(d.getDate()).padStart(2, '0');
+    setSelectedDate(`${newYear}-${newMonth}-${newDay}`);
+  };
 
   useEffect(() => {
     loadActiveCows();
@@ -174,16 +184,24 @@ function MilkYieldLog() {
 
         <div className="milk-yield-toolbar">
           <div className="milk-yield-field" style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
-            <div>
-              <label htmlFor="milk-log-date" style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '600', color: '#475569' }}>Select Date</label>
-              <input
-                id="milk-log-date"
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                style={{ padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px' }}
-              />
-            </div>
+              <div>
+                <label htmlFor="milk-log-date" style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '600', color: '#475569' }}>Select Date</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button type="button" onClick={() => changeDate(-1)} style={{ padding: '8px', cursor: 'pointer', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', color: '#475569' }}>
+                    <ChevronLeft size={16} />
+                  </button>
+                  <input
+                    id="milk-log-date"
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    style={{ padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px' }}
+                  />
+                  <button type="button" onClick={() => changeDate(1)} style={{ padding: '8px', cursor: 'pointer', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', color: '#475569' }}>
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
             <button 
               type="button" 
               className="save-milk-log-button" 

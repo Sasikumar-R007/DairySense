@@ -1,11 +1,33 @@
 import express from 'express';
-import { getAllUsers, createUser, updateUser, deleteUser } from '../services/userService.js';
+import { getAllUsers, createUser, updateUser, deleteUser, updateUserProfile, updateUserPassword } from '../services/userService.js';
 import { authenticateToken, authorizeAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// All user routes are protected and require Admin role
 router.use(authenticateToken);
+
+// Self-service paths
+router.put('/profile/me', async (req, res) => {
+  try {
+    const user = await updateUserProfile(req.user.userId, req.body);
+    res.json({ message: 'Profile updated', user });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.put('/password/me', async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ error: 'Password required' });
+    await updateUserPassword(req.user.userId, password);
+    res.json({ message: 'Password updated' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// All routes below require Admin
 router.use(authorizeAdmin);
 
 // Get all users

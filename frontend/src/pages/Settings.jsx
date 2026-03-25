@@ -1,363 +1,367 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { settingsAPI, userAPI } from '../services/api';
 import { 
-  ArrowLeft, 
-  Globe, 
-  Lock, 
-  BookOpen, 
-  Radio, 
-  Tag,
-  Check,
-  Eye,
-  EyeOff
+  Save, Shield, User, Bell, Factory, DatabaseBackup, CheckCircle2, Edit3, XCircle
 } from 'lucide-react';
 import './Settings.css';
 
 function Settings() {
-  const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const [language, setLanguage] = useState('english');
-  const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordError, setPasswordError] = useState('');
-  const [passwordSuccess, setPasswordSuccess] = useState('');
-  const [expandedSection, setExpandedSection] = useState(null);
+  const isAdmin = currentUser?.role === 'admin';
+  const [activeTab, setActiveTab] = useState(isAdmin ? 'farm' : 'profile');
+  const [isEditing, setIsEditing] = useState(false);
 
-  const handleLanguageChange = (lang) => {
-    setLanguage(lang);
-    // TODO: Implement language change functionality
-    console.log('Language changed to:', lang);
-  };
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
 
-  const handlePasswordChange = async (e) => {
-    e.preventDefault();
-    setPasswordError('');
-    setPasswordSuccess('');
+  // Admin states
+  const [farmProfile, setFarmProfile] = useState({ name: '', email: '', phone: '' });
+  const [alerts, setAlerts] = useState({ milk_drop_threshold: 2.0, low_feed_threshold: 50, low_medicine_threshold: 10 });
+  const [hardware, setHardware] = useState({ rfid_enabled: true, qr_enabled: true });
 
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setPasswordError('New passwords do not match');
-      return;
-    }
+  // User states
+  const [profileForm, setProfileForm] = useState({ name: '', phoneNumber: '', email: '' });
+  const [passwordForm, setPasswordForm] = useState({ password: '', confirmPassword: '' });
 
-    if (passwordData.newPassword.length < 6) {
-      setPasswordError('Password must be at least 6 characters long');
-      return;
-    }
-
-    try {
-      // TODO: Implement password change API call
-      // const result = await authAPI.changePassword(passwordData.currentPassword, passwordData.newPassword);
-      
-      // Simulate success for now
-      setPasswordSuccess('Password changed successfully!');
-      setPasswordData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
+  useEffect(() => {
+    if (currentUser) {
+      setProfileForm({
+        name: currentUser.name || '',
+        phoneNumber: currentUser.phoneNumber || '',
+        email: currentUser.email || ''
       });
-      setTimeout(() => {
-        setShowPasswordForm(false);
-        setPasswordSuccess('');
-      }, 2000);
-    } catch (error) {
-      setPasswordError(error.message || 'Failed to change password');
+      if (isAdmin) loadSettings();
+    }
+  }, [currentUser, isAdmin]);
+
+  const showMessage = (type, text) => {
+    setMessage({ type, text });
+    setTimeout(() => setMessage({ type: '', text: '' }), 4000);
+  };
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setIsEditing(false);
+  };
+
+  const loadSettings = async () => {
+    setLoading(true);
+    try {
+      const data = await settingsAPI.getSettings();
+      if (data.farm_profile) setFarmProfile(data.farm_profile);
+      if (data.alerts) setAlerts(data.alerts);
+      if (data.hardware) setHardware(data.hardware);
+    } catch (err) {
+      console.error(err);
+      showMessage('error', 'Failed to load system settings');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const toggleSection = (section) => {
-    setExpandedSection(expandedSection === section ? null : section);
+  const handleAdminSave = async () => {
+    setSaving(true);
+    try {
+      await settingsAPI.updateSettings({
+        farm_profile: farmProfile,
+        alerts,
+        hardware
+      });
+      showMessage('success', 'System settings updated successfully!');
+      setIsEditing(false);
+    } catch (err) {
+      showMessage('error', err.response?.data?.error || err.message || 'Failed to update settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleProfileSave = async () => {
+    setSaving(true);
+    try {
+      await userAPI.updateProfile(profileForm);
+      showMessage('success', 'Personal profile updated! (Relogin to see header changes)');
+      setIsEditing(false);
+    } catch (err) {
+      showMessage('error', err.response?.data?.error || err.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePasswordSave = async () => {
+    if (passwordForm.password !== passwordForm.confirmPassword) {
+      return showMessage('error', 'Passwords do not match');
+    }
+    if (passwordForm.password.length < 6) {
+      return showMessage('error', 'Password must be at least 6 characters');
+    }
+    setSaving(true);
+    try {
+      await userAPI.updatePassword(passwordForm.password);
+      showMessage('success', 'Security password successfully updated!');
+      setPasswordForm({ password: '', confirmPassword: '' });
+      setIsEditing(false);
+    } catch (err) {
+      showMessage('error', err.response?.data?.error || err.message || 'Failed to update password');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleBackup = async () => {
+    setSaving(true);
+    try {
+      const resp = await settingsAPI.backupDatabase();
+      showMessage('success', `Backup generated! Reference ID: ${resp.backup_id} at ${new Date(resp.timestamp).toLocaleString()}`);
+    } catch (err) {
+      showMessage('error', 'Failed to generate backup');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const renderActionButtons = (saveHandler) => {
+    if (!isEditing) {
+      return (
+        <button type="button" className="settings-edit-btn" onClick={() => setIsEditing(true)}>
+          <Edit3 size={16} /> Enable Quick Edit
+        </button>
+      );
+    }
+    return (
+      <div style={{ display: 'flex', gap: '12px' }}>
+        <button type="button" className="settings-cancel-btn" onClick={() => {
+          setIsEditing(false);
+          if (activeTab === 'profile' && currentUser) {
+            setProfileForm({ name: currentUser.name || '', phoneNumber: currentUser.phoneNumber || '', email: currentUser.email || '' });
+          } else if (['farm', 'alerts', 'hardware'].includes(activeTab)) {
+            loadSettings();
+          }
+        }}>
+          <XCircle size={16} /> Cancel
+        </button>
+        <button type="button" className="settings-save-btn" onClick={() => {
+          if (window.confirm('Are you absolutely sure you want to apply these configuration changes?')) {
+            saveHandler();
+          }
+        }} disabled={saving}>
+          <Save size={16} /> {saving ? 'Writing...' : 'Confirm & Apply'}
+        </button>
+      </div>
+    );
   };
 
   return (
     <div className="settings-page">
-      <header className="settings-header">
-        <button 
-          className="back-button"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft size={20} />
-          <span>Back</span>
-        </button>
-        <h1>Settings</h1>
-      </header>
+      <div className="settings-header">
+        <h1>Platform Settings</h1>
+        <p>Manage your account configuration and system-level rules.</p>
+      </div>
 
-      <div className="settings-content">
-        {/* Language Settings */}
-        <div className="settings-section">
-          <div className="settings-section-header" onClick={() => toggleSection('language')}>
-            <div className="section-title">
-              <Globe size={24} />
-              <h2>Language Settings</h2>
-            </div>
-            <span className="section-toggle">{expandedSection === 'language' ? '−' : '+'}</span>
+      {message.text && (
+        <div className={`settings-alert ${message.type}`}>
+          <div className="alert-content">
+            {message.type === 'success' ? <CheckCircle2 size={18} /> : null}
+            <span>{message.text}</span>
           </div>
-          {expandedSection === 'language' && (
-            <div className="settings-section-content">
-              <p className="section-description">Select your preferred language for the application</p>
-              <div className="language-options">
-                <button 
-                  className={`language-option ${language === 'english' ? 'active' : ''}`}
-                  onClick={() => handleLanguageChange('english')}
-                >
-                  <span>English</span>
-                  {language === 'english' && <Check size={20} />}
-                </button>
-                <button 
-                  className={`language-option ${language === 'tamil' ? 'active' : ''}`}
-                  onClick={() => handleLanguageChange('tamil')}
-                >
-                  <span>தமிழ் (Tamil)</span>
-                  {language === 'tamil' && <Check size={20} />}
-                </button>
-                <button 
-                  className={`language-option ${language === 'hindi' ? 'active' : ''}`}
-                  onClick={() => handleLanguageChange('hindi')}
-                >
-                  <span>हिंदी (Hindi)</span>
-                  {language === 'hindi' && <Check size={20} />}
-                </button>
-              </div>
+        </div>
+      )}
+
+      <div className="settings-container">
+        <div className="settings-sidebar">
+          {isAdmin && (
+            <div className="settings-sidebar-section">
+              <h4>Global Admin</h4>
+              <button 
+                className={`tab-btn ${activeTab === 'farm' ? 'active' : ''}`}
+                onClick={() => handleTabChange('farm')}
+              >
+                <Factory size={16} /> Farm Profile
+              </button>
+              <button 
+                className={`tab-btn ${activeTab === 'alerts' ? 'active' : ''}`}
+                onClick={() => handleTabChange('alerts')}
+              >
+                <Bell size={16} /> Alert Thresholds
+              </button>
+              <button 
+                className={`tab-btn ${activeTab === 'hardware' ? 'active' : ''}`}
+                onClick={() => handleTabChange('hardware')}
+              >
+                <Shield size={16} /> Hardware Toggles
+              </button>
+              <button 
+                className={`tab-btn ${activeTab === 'backup' ? 'active' : ''}`}
+                onClick={() => handleTabChange('backup')}
+              >
+                <DatabaseBackup size={16} /> Database
+              </button>
             </div>
           )}
+
+          <div className="settings-sidebar-section">
+            <h4>Personal Account</h4>
+            <button 
+              className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
+              onClick={() => handleTabChange('profile')}
+            >
+              <User size={16} /> My Profile
+            </button>
+            <button 
+              className={`tab-btn ${activeTab === 'security' ? 'active' : ''}`}
+              onClick={() => handleTabChange('security')}
+            >
+              <Shield size={16} /> Security
+            </button>
+          </div>
         </div>
 
-        {/* Change Password */}
-        <div className="settings-section">
-          <div className="settings-section-header" onClick={() => toggleSection('password')}>
-            <div className="section-title">
-              <Lock size={24} />
-              <h2>Change Password</h2>
-            </div>
-            <span className="section-toggle">{expandedSection === 'password' ? '−' : '+'}</span>
-          </div>
-          {expandedSection === 'password' && (
-            <div className="settings-section-content">
-              <form onSubmit={handlePasswordChange} className="password-form">
-                {passwordError && <div className="error-message">{passwordError}</div>}
-                {passwordSuccess && <div className="success-message">{passwordSuccess}</div>}
-                
-                <div className="form-group">
-                  <label htmlFor="currentPassword">Current Password</label>
-                  <div className="password-input-wrapper">
-                    <input
-                      id="currentPassword"
-                      type={showCurrentPassword ? 'text' : 'password'}
-                      value={passwordData.currentPassword}
-                      onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
-                      required
-                      placeholder="Enter current password"
-                    />
-                    <button
-                      type="button"
-                      className="password-toggle"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    >
-                      {showCurrentPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+        <div className="settings-content">
+          {loading ? (
+            <div className="settings-loading" style={{ padding: '32px' }}>Loading configuration data from server...</div>
+          ) : (
+            <>
+              {/* ADMIN: Farm Profile */}
+              {activeTab === 'farm' && isAdmin && (
+                <div className="settings-form-panel">
+                  <h2>Farm Profile</h2>
+                  <p className="panel-desc">Official configuration for PDF reports and system headers.</p>
+                  
+                  <div className="settings-form-group">
+                    <label>Farm Name</label>
+                    <input type="text" value={farmProfile.name} disabled={!isEditing} onChange={e => setFarmProfile({...farmProfile, name: e.target.value})} placeholder="e.g. DairySense Master Farm" />
+                  </div>
+                  <div className="settings-form-group">
+                    <label>Contact Email</label>
+                    <input type="email" value={farmProfile.email} disabled={!isEditing} onChange={e => setFarmProfile({...farmProfile, email: e.target.value})} placeholder="Official email address" />
+                  </div>
+                  <div className="settings-form-group">
+                    <label>Phone Number</label>
+                    <input type="text" value={farmProfile.phone} disabled={!isEditing} onChange={e => setFarmProfile({...farmProfile, phone: e.target.value})} placeholder="Primary contact number" />
+                  </div>
+
+                  {renderActionButtons(handleAdminSave)}
+                </div>
+              )}
+
+              {/* ADMIN: Alerts */}
+              {activeTab === 'alerts' && isAdmin && (
+                <div className="settings-form-panel">
+                  <h2>Alert Thresholds</h2>
+                  <p className="panel-desc">Configure the trigger limits for automated system warnings on monitoring pages.</p>
+                  
+                  <div className="settings-form-group">
+                    <label>Milk Drop Alert Limit (Liters)</label>
+                    <input type="number" step="0.5" disabled={!isEditing} value={alerts.milk_drop_threshold} onChange={e => setAlerts({...alerts, milk_drop_threshold: Number(e.target.value)})} />
+                    <span className="help-text">System alerts if a cow's yield drops by this metric compared to yesterday.</span>
+                  </div>
+                  <div className="settings-form-group">
+                    <label>Low Feed Warning (kg)</label>
+                    <input type="number" disabled={!isEditing} value={alerts.low_feed_threshold} onChange={e => setAlerts({...alerts, low_feed_threshold: Number(e.target.value)})} />
+                  </div>
+                  <div className="settings-form-group">
+                    <label>Low Medicine Stock (Units)</label>
+                    <input type="number" disabled={!isEditing} value={alerts.low_medicine_threshold} onChange={e => setAlerts({...alerts, low_medicine_threshold: Number(e.target.value)})} />
+                  </div>
+
+                  {renderActionButtons(handleAdminSave)}
+                </div>
+              )}
+
+              {/* ADMIN: Hardware */}
+              {activeTab === 'hardware' && isAdmin && (
+                <div className="settings-form-panel">
+                  <h2>Hardware Toggles</h2>
+                  <p className="panel-desc">Enable or suppress hardware scanning flows globally.</p>
+                  
+                  <div className="toggle-group" style={{ opacity: isEditing ? 1 : 0.6 }}>
+                    <label className="toggle-label" style={{ cursor: isEditing ? 'pointer' : 'not-allowed' }}>
+                      <div>
+                        <strong>RFID Integration</strong>
+                        <p>Allow RFID tag mapping on the Add Cow setup phase.</p>
+                      </div>
+                      <input type="checkbox" disabled={!isEditing} checked={hardware.rfid_enabled} onChange={e => setHardware({...hardware, rfid_enabled: e.target.checked})} />
+                    </label>
+                  </div>
+                  <div className="toggle-group" style={{ opacity: isEditing ? 1 : 0.6 }}>
+                    <label className="toggle-label" style={{ cursor: isEditing ? 'pointer' : 'not-allowed' }}>
+                      <div>
+                        <strong>QR Code Scanning</strong>
+                        <p>Allow QR scanning generation and reading.</p>
+                      </div>
+                      <input type="checkbox" disabled={!isEditing} checked={hardware.qr_enabled} onChange={e => setHardware({...hardware, qr_enabled: e.target.checked})} />
+                    </label>
+                  </div>
+
+                  {renderActionButtons(handleAdminSave)}
+                </div>
+              )}
+
+              {/* ADMIN: Backup */}
+              {activeTab === 'backup' && isAdmin && (
+                <div className="settings-form-panel">
+                  <h2>Database Controls</h2>
+                  <p className="panel-desc">Extract raw snapshots of the PostgreSQL database natively to JSON.</p>
+                  
+                  <div className="danger-zone">
+                    <h3>Generate Data Backup</h3>
+                    <p>This action computes a unified ledger block across cows, milk, and feed logs returning a traceable backup ID.</p>
+                    <button type="button" className="settings-backup-btn" onClick={() => {
+                      if(window.confirm('Execute raw database snapshot pull?')) {
+                        handleBackup();
+                      }
+                    }} disabled={saving}>
+                      <DatabaseBackup size={16} /> {saving ? 'Generating...' : 'Run Backup Sequence'}
                     </button>
                   </div>
                 </div>
+              )}
 
-                <div className="form-group">
-                  <label htmlFor="newPassword">New Password</label>
-                  <div className="password-input-wrapper">
-                    <input
-                      id="newPassword"
-                      type={showNewPassword ? 'text' : 'password'}
-                      value={passwordData.newPassword}
-                      onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
-                      required
-                      placeholder="Enter new password"
-                      minLength={6}
-                    />
-                    <button
-                      type="button"
-                      className="password-toggle"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                    >
-                      {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
+              {/* USER: Profile */}
+              {activeTab === 'profile' && (
+                <form className="settings-form-panel" onSubmit={(e) => e.preventDefault()}>
+                  <h2>Personal Profile</h2>
+                  <p className="panel-desc">Change your localized identity settings.</p>
+                  
+                  <div className="settings-form-group">
+                    <label>Full Display Name</label>
+                    <input type="text" disabled={!isEditing} value={profileForm.name} onChange={e => setProfileForm({...profileForm, name: e.target.value})} />
                   </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="confirmPassword">Confirm New Password</label>
-                  <div className="password-input-wrapper">
-                    <input
-                      id="confirmPassword"
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      value={passwordData.confirmPassword}
-                      onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
-                      required
-                      placeholder="Confirm new password"
-                      minLength={6}
-                    />
-                    <button
-                      type="button"
-                      className="password-toggle"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    >
-                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
+                  <div className="settings-form-group">
+                    <label>Mobile Number</label>
+                    <input type="text" disabled={!isEditing} value={profileForm.phoneNumber} onChange={e => setProfileForm({...profileForm, phoneNumber: e.target.value})} />
                   </div>
-                </div>
+                  <div className="settings-form-group">
+                    <label>Email Address</label>
+                    <input type="email" disabled={!isEditing} value={profileForm.email} onChange={e => setProfileForm({...profileForm, email: e.target.value})} />
+                  </div>
 
-                <button type="submit" className="submit-button">
-                  Change Password
-                </button>
-              </form>
-            </div>
-          )}
-        </div>
+                  {renderActionButtons(handleProfileSave)}
+                </form>
+              )}
 
-        {/* User Guide */}
-        <div className="settings-section">
-          <div className="settings-section-header" onClick={() => toggleSection('guide')}>
-            <div className="section-title">
-              <BookOpen size={24} />
-              <h2>User Guide</h2>
-            </div>
-            <span className="section-toggle">{expandedSection === 'guide' ? '−' : '+'}</span>
-          </div>
-          {expandedSection === 'guide' && (
-            <div className="settings-section-content">
-              <div className="guide-content">
-                <h3>Welcome to DairySense</h3>
-                <p>DairySense is a smart dairy monitoring system that helps you track and manage your dairy operations efficiently.</p>
-                
-                <h4>Key Features:</h4>
-                <ul>
-                  <li><strong>Monitoring Dashboard:</strong> View real-time statistics about your dairy operations</li>
-                  <li><strong>Record Management:</strong> Scan cows, record feed, and track milk yields</li>
-                  <li><strong>Cow Performance:</strong> Analyze individual cow performance and history</li>
-                  <li><strong>Daily Reports:</strong> Get comprehensive daily summaries of your operations</li>
-                  <li><strong>History Log:</strong> Access historical data and trends</li>
-                </ul>
+              {/* USER: Security */}
+              {activeTab === 'security' && (
+                <form className="settings-form-panel" onSubmit={(e) => e.preventDefault()}>
+                  <h2>Security Credentials</h2>
+                  <p className="panel-desc">Change your master login password.</p>
+                  
+                  <div className="settings-form-group">
+                    <label>New Password</label>
+                    <input type="password" disabled={!isEditing} value={passwordForm.password} onChange={e => setPasswordForm({...passwordForm, password: e.target.value})} placeholder="Minimum 6 characters" required />
+                  </div>
+                  <div className="settings-form-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" disabled={!isEditing} value={passwordForm.confirmPassword} onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} placeholder="Repeat the precise password above" required />
+                  </div>
 
-                <h4>Getting Started:</h4>
-                <ol>
-                  <li>Use the Monitoring Dashboard to get an overview of your dairy operations</li>
-                  <li>Navigate to Record Management to scan cows and record data</li>
-                  <li>View individual cow performance for detailed insights</li>
-                  <li>Check daily reports and history for comprehensive analysis</li>
-                </ol>
-
-                <h4>Tips:</h4>
-                <ul>
-                  <li>Scan cows regularly to maintain accurate records</li>
-                  <li>Record milk yields twice daily (morning and evening) for best results</li>
-                  <li>Monitor low yield cows for health issues</li>
-                  <li>Use the date filter to view historical data</li>
-                </ul>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* About RFID Reader */}
-        <div className="settings-section">
-          <div className="settings-section-header" onClick={() => toggleSection('reader')}>
-            <div className="section-title">
-              <Radio size={24} />
-              <h2>About RFID Reader</h2>
-            </div>
-            <span className="section-toggle">{expandedSection === 'reader' ? '−' : '+'}</span>
-          </div>
-          {expandedSection === 'reader' && (
-            <div className="settings-section-content">
-              <div className="info-content">
-                <h3>RFID Reader Hardware</h3>
-                <p>The DairySense RFID Reader is a custom-built hardware device designed for efficient cow tracking in dairy operations.</p>
-                
-                <h4>Features:</h4>
-                <ul>
-                  <li><strong>Lane-based Scanning:</strong> Automatically detects cows as they pass through feeding lanes</li>
-                  <li><strong>Real-time Data:</strong> Instantly transmits cow ID and timestamp to the system</li>
-                  <li><strong>Weather Resistant:</strong> Built to withstand farm environment conditions</li>
-                  <li><strong>Low Power Consumption:</strong> Energy-efficient design for continuous operation</li>
-                  <li><strong>High Accuracy:</strong> Reliable tag reading with minimal errors</li>
-                </ul>
-
-                <h4>Installation:</h4>
-                <p>The RFID reader should be installed at the entrance of each feeding lane, positioned to capture tags as cows enter.</p>
-
-                <h4>Maintenance:</h4>
-                <ul>
-                  <li>Keep the reader clean and free from debris</li>
-                  <li>Check connections regularly</li>
-                  <li>Ensure adequate power supply</li>
-                  <li>Test reading accuracy periodically</li>
-                </ul>
-
-                <h4>Technical Specifications:</h4>
-                <ul>
-                  <li>Frequency: 125 kHz / 134.2 kHz</li>
-                  <li>Reading Range: Up to 15 cm</li>
-                  <li>Power Supply: 12V DC</li>
-                  <li>Communication: USB / Serial</li>
-                </ul>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* About Tag */}
-        <div className="settings-section">
-          <div className="settings-section-header" onClick={() => toggleSection('tag')}>
-            <div className="section-title">
-              <Tag size={24} />
-              <h2>About RFID Tag</h2>
-            </div>
-            <span className="section-toggle">{expandedSection === 'tag' ? '−' : '+'}</span>
-          </div>
-          {expandedSection === 'tag' && (
-            <div className="settings-section-content">
-              <div className="info-content">
-                <h3>RFID Ear Tags</h3>
-                <p>Each cow is equipped with a unique RFID ear tag that serves as its identification in the DairySense system.</p>
-                
-                <h4>Tag Features:</h4>
-                <ul>
-                  <li><strong>Unique ID:</strong> Each tag has a unique identification number</li>
-                  <li><strong>Durable:</strong> Designed to last for the lifetime of the cow</li>
-                  <li><strong>Weather Resistant:</strong> Waterproof and weatherproof design</li>
-                  <li><strong>Easy Installation:</strong> Simple ear tag application process</li>
-                  <li><strong>Non-invasive:</strong> Comfortable for the animal</li>
-                </ul>
-
-                <h4>Tag Installation:</h4>
-                <ol>
-                  <li>Prepare the ear tag applicator</li>
-                  <li>Position the tag on the cow's ear</li>
-                  <li>Apply the tag using the applicator tool</li>
-                  <li>Register the tag ID in the system with the cow's details</li>
-                  <li>Verify the tag is readable with the RFID reader</li>
-                </ol>
-
-                <h4>Tag Maintenance:</h4>
-                <ul>
-                  <li>Check tags regularly for damage or loss</li>
-                  <li>Replace damaged tags immediately</li>
-                  <li>Keep tags clean for optimal reading</li>
-                  <li>Record tag replacements in the system</li>
-                </ul>
-
-                <h4>Best Practices:</h4>
-                <ul>
-                  <li>Install tags when cows are young for better acceptance</li>
-                  <li>Ensure tags are securely attached to prevent loss</li>
-                  <li>Register tag IDs immediately after installation</li>
-                  <li>Keep a backup record of tag-cow associations</li>
-                </ul>
-              </div>
-            </div>
+                  {renderActionButtons(handlePasswordSave)}
+                </form>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -366,4 +370,3 @@ function Settings() {
 }
 
 export default Settings;
-

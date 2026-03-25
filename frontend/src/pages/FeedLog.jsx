@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { feedAPI } from '../services/api';
 import './FeedLog.css';
 
@@ -26,6 +26,16 @@ function FeedLog() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+
+  const changeDate = (days) => {
+    const [year, month, day] = selectedDate.split('-').map(Number);
+    const d = new Date(year, month - 1, day);
+    d.setDate(d.getDate() + days);
+    const newYear = d.getFullYear();
+    const newMonth = String(d.getMonth() + 1).padStart(2, '0');
+    const newDay = String(d.getDate()).padStart(2, '0');
+    setSelectedDate(`${newYear}-${newMonth}-${newDay}`);
+  };
 
   useEffect(() => {
     loadMasterData();
@@ -185,12 +195,21 @@ function FeedLog() {
         <div className="feed-log-toolbar">
           <div className="feed-log-field">
             <label htmlFor="feed-log-date">Select Date</label>
-            <input
-              id="feed-log-date"
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button type="button" onClick={() => changeDate(-1)} style={{ padding: '8px', cursor: 'pointer', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', color: '#475569' }}>
+                <ChevronLeft size={16} />
+              </button>
+              <input
+                id="feed-log-date"
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                style={{ padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', flex: 1 }}
+              />
+              <button type="button" onClick={() => changeDate(1)} style={{ padding: '8px', cursor: 'pointer', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', color: '#475569' }}>
+                <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
         </div>
 
