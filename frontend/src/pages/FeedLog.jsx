@@ -9,10 +9,7 @@ function createEmptyRow() {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     category_id: '',
     feed_item_id: '',
-    quantity_kg: '',
-    cost_per_unit: '',
-    total_amount: '',
-    input_source: 'Purchased'
+    quantity_kg: ''
   };
 }
 
@@ -102,23 +99,6 @@ function FeedLog() {
           const selectedItem = itemMap.get(Number(value));
           if (selectedItem) {
             nextRow.category_id = String(selectedItem.category_id);
-            if (selectedItem.default_cost_per_unit) {
-               nextRow.cost_per_unit = selectedItem.default_cost_per_unit;
-            }
-            if (selectedItem.default_source) {
-               nextRow.input_source = selectedItem.default_source;
-            }
-          }
-        }
-
-        // Auto-calculate Total Amount
-        if (field === 'quantity_kg' || field === 'cost_per_unit' || field === 'feed_item_id') {
-          const qty = field === 'quantity_kg' ? value : nextRow.quantity_kg;
-          const cost = field === 'cost_per_unit' ? value : nextRow.cost_per_unit;
-          if (qty !== '' && cost !== '' && !isNaN(qty) && !isNaN(cost)) {
-             nextRow.total_amount = (parseFloat(qty) * parseFloat(cost)).toFixed(2);
-          } else {
-             nextRow.total_amount = '';
           }
         }
 
@@ -145,12 +125,10 @@ function FeedLog() {
 
   const handleSave = async () => {
     const preparedItems = rows
-      .filter((row) => row.feed_item_id && row.quantity_kg !== '' && row.cost_per_unit !== '')
+      .filter((row) => row.feed_item_id && row.quantity_kg !== '')
       .map((row) => ({
         feed_item_id: Number(row.feed_item_id),
-        quantity_kg: Number(row.quantity_kg),
-        cost_per_unit: Number(row.cost_per_unit),
-        input_source: row.input_source
+        quantity_kg: Number(row.quantity_kg)
       }));
 
     if (preparedItems.length === 0) {
@@ -224,9 +202,6 @@ function FeedLog() {
                     <th>Feed Category</th>
                     <th>Feed Item</th>
                     <th>Quantity (kg)</th>
-                    <th>Cost Per Unit</th>
-                    <th>Total Amount</th>
-                    <th>Source</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -269,36 +244,6 @@ function FeedLog() {
                           onChange={(e) => updateRow(row.id, 'quantity_kg', e.target.value)}
                           placeholder="Quantity"
                         />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={row.cost_per_unit}
-                          onChange={(e) => updateRow(row.id, 'cost_per_unit', e.target.value)}
-                          placeholder="Cost/Unit"
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={row.total_amount || ''}
-                          readOnly
-                          style={{ backgroundColor: '#f1f5f9', cursor: 'not-allowed' }}
-                          placeholder="Auto Calc"
-                        />
-                      </td>
-                      <td>
-                        <select
-                          value={row.input_source}
-                          onChange={(e) => updateRow(row.id, 'input_source', e.target.value)}
-                        >
-                          <option value="Purchased">Purchased</option>
-                          <option value="Farm Produced">Farm Produced</option>
-                        </select>
                       </td>
                       <td className="row-action-cell">
                         <button

@@ -34,7 +34,6 @@ function CowsList() {
     setTimeout(() => setMessage({ type: '', text: '' }), 3000);
   };
 
-  // Filter cows based on search term and type
   const filteredCows = cows.filter(cow => {
     const matchesSearch = 
       cow.cow_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -65,11 +64,8 @@ function CowsList() {
             </button>
             <h2>All Cows</h2>
           </div>
-          <button 
-            onClick={() => navigate('/add-cow')} 
-            className="add-cow-button"
-          >
-            ➕ Add New Cow
+          <button className="add-cow-button" onClick={() => navigate('/add-cow')}>
+            <Plus size={16} style={{marginRight: '6px'}} /> Add New Cow
           </button>
         </div>
 
@@ -79,7 +75,6 @@ function CowsList() {
           </div>
         )}
 
-        {/* Filters */}
         <div className="filters-section">
           <div className="search-box">
             <input
@@ -119,7 +114,6 @@ function CowsList() {
           </div>
         </div>
 
-        {/* Cows Table */}
         {loading ? (
           <div className="loading-state">Loading cows...</div>
         ) : filteredCows.length === 0 ? (
@@ -190,4 +184,3 @@ function CowsList() {
 }
 
 export default CowsList;
-

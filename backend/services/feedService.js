@@ -73,23 +73,17 @@ export async function createFeedLog(date, items = []) {
         input_source
       } = item;
 
-      if (!feed_item_id || quantity_kg === undefined || cost_per_unit === undefined || !input_source) {
-        throw new Error('Each item requires feed_item_id, quantity_kg, cost_per_unit, and input_source');
+      if (!feed_item_id || quantity_kg === undefined) {
+        throw new Error('Each item requires feed_item_id and quantity_kg');
       }
 
       const quantity = parseFloat(quantity_kg);
-      const cost = parseFloat(cost_per_unit);
       if (!Number.isFinite(quantity) || quantity < 0) {
         throw new Error('quantity_kg must be a valid non-negative number');
       }
-      if (!Number.isFinite(cost) || cost < 0) {
-        throw new Error('cost_per_unit must be a valid non-negative number');
-      }
-
-      const normalizedSource = normalizeInputSource(input_source);
 
       const feedItemResult = await client.query(
-        `SELECT id FROM feed_item_master WHERE id = $1`,
+        `SELECT id, default_cost_per_unit, default_source FROM feed_item_master WHERE id = $1`,
         [feed_item_id]
       );
 
@@ -97,14 +91,19 @@ export async function createFeedLog(date, items = []) {
         throw new Error(`Feed item ${feed_item_id} not found`);
       }
 
-      const totalAmount = parseFloat((quantity * cost).toFixed(2));
+      const dbItem = feedItemResult.rows[0];
+      const finalCost = cost_per_unit !== undefined ? parseFloat(cost_per_unit) : parseFloat(dbItem.default_cost_per_unit || 0);
+      const rawSource = input_source || dbItem.default_source || 'Purchased';
+      const normalizedSource = normalizeInputSource(rawSource);
+
+      const totalAmount = parseFloat((quantity * finalCost).toFixed(2));
 
       const insertResult = await client.query(
         `INSERT INTO feed_log (
           date, feed_item_id, quantity_kg, cost_per_unit, total_amount, input_source
         ) VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *`,
-        [date, feed_item_id, quantity, cost, totalAmount, normalizedSource]
+        [date, feed_item_id, quantity, finalCost, totalAmount, normalizedSource]
       );
 
       insertedRows.push(insertResult.rows[0]);
