@@ -132,6 +132,28 @@
   cursor: not-allowed;
 }
 
+.log-action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.delete-log-btn {
+  color: #ef4444;
+}
+
+.delete-log-btn:hover {
+  background: #fee2e2;
+}
+
 .saved-milk-section {
   margin-top: 32px;
 }

@@ -1,10 +1,8 @@
 /**
  * Monitoring Service
  * 
- * Business logic for the Farmer Monitoring & Analysis module.
- * Calculates cow status, aggregates metrics, and generates insights.
- * 
- * IMPORTANT: This module is standalone and does NOT modify existing core tables.
+ * Unified business logic for the Farmer Monitoring & Analysis module.
+ * Aggregates data from both legacy (daily_lane_log) and V2 (milk_yield_log, feed_log) tables.
  */
 
 import pool from '../config/database.js';
@@ -18,57 +16,60 @@ function getTodayDateString() {
 }
 
 /**
- * Calculates 7-day average milk yield for a cow
+ * Calculates 7-day average milk yield for a cow (Unified)
  */
 async function calculateSevenDayAverage(cowId, targetDate) {
   const sevenDaysAgo = new Date(targetDate);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // Include today + 6 previous days
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+  const start = sevenDaysAgo.toISOString().split('T')[0];
   
+  // Combine milk from both legacy and V2 tables
   const result = await pool.query(`
-    SELECT AVG(COALESCE(total_yield_l, 0)) as avg_yield
-    FROM daily_lane_log
-    WHERE cow_id = $1 
-      AND date >= $2 
-      AND date <= $3
-      AND total_yield_l IS NOT NULL
-  `, [cowId, sevenDaysAgo.toISOString().split('T')[0], targetDate]);
+    WITH UnifiedMilk AS (
+      SELECT cow_id, date, total_yield_l as yield
+      FROM daily_lane_log
+      WHERE cow_id = $1 AND date >= $2 AND date <= $3
+      UNION ALL
+      SELECT cow_id, date, milk_qty_litre as yield
+      FROM milk_yield_log
+      WHERE cow_id = $1 AND date >= $2 AND date <= $3
+    )
+    SELECT AVG(COALESCE(yield, 0)) as avg_yield
+    FROM UnifiedMilk
+  `, [cowId, start, targetDate]);
   
   const avg = result.rows[0]?.avg_yield;
   return avg ? parseFloat(avg) : 0;
 }
 
 /**
- * Calculates and stores cow status based on yield rules
+ * Calculates and stores cow status based on yield rules (Unified)
  */
 async function calculateCowStatus(cowId, targetDate) {
-  // Get today's milk yield from daily_lane_log
+  // Get today's milk yield from both sources
   const todayResult = await pool.query(`
-    SELECT 
-      COALESCE(SUM(total_yield_l), 0) as today_milk,
-      MAX(lane_no) as lane_id
-    FROM daily_lane_log
-    WHERE cow_id = $1 AND date = $2
-    GROUP BY cow_id
+    WITH TodayMilk AS (
+      SELECT cow_id, total_yield_l as yield
+      FROM daily_lane_log
+      WHERE cow_id = $1 AND date = $2
+      UNION ALL
+      SELECT cow_id, milk_qty_litre as yield
+      FROM milk_yield_log
+      WHERE cow_id = $1 AND date = $2
+    )
+    SELECT COALESCE(SUM(yield), 0) as today_total
+    FROM TodayMilk
   `, [cowId, targetDate]);
   
-  const todayMilk = parseFloat(todayResult.rows[0]?.today_milk || 0);
-  const laneId = todayResult.rows[0]?.lane_id?.toString() || null;
-  
-  // Calculate 7-day average
+  const todayMilk = parseFloat(todayResult.rows[0]?.today_total || 0);
   const sevenDayAvg = await calculateSevenDayAverage(cowId, targetDate);
   
   let status = 'NORMAL';
   let reason = null;
   
-  // Status calculation rules
   if (sevenDayAvg === 0) {
-    // No historical data - check if today has entry
-    if (todayMilk === 0) {
-      status = 'ATTENTION';
-      reason = 'No yield recorded';
-    } else {
-      status = 'NORMAL'; // First day with yield
-    }
+    status = todayMilk === 0 ? 'ATTENTION' : 'NORMAL';
+    if (todayMilk === 0) reason = 'No yield recorded';
   } else if (todayMilk === 0) {
     status = 'ATTENTION';
     reason = 'No yield recorded';
@@ -80,10 +81,8 @@ async function calculateCowStatus(cowId, targetDate) {
     reason = 'Minor yield drop';
   } else {
     status = 'NORMAL';
-    reason = null;
   }
   
-  // Upsert status
   await pool.query(`
     INSERT INTO cow_daily_status (cow_id, date, status, reason)
     VALUES ($1, $2, $3, $4)
@@ -91,43 +90,42 @@ async function calculateCowStatus(cowId, targetDate) {
     DO UPDATE SET status = $3, reason = $4, created_at = CURRENT_TIMESTAMP
   `, [cowId, targetDate, status, reason]);
   
-  return { status, reason, todayMilk, sevenDayAvg, laneId };
+  return { status, reason, todayMilk, sevenDayAvg };
 }
 
 /**
- * Syncs daily_cow_metrics from daily_lane_log for a specific date
+ * Syncs daily_cow_metrics reporting table from all sources
  */
 async function syncDailyMetrics(targetDate) {
-  // Aggregate daily_lane_log data per cow per day
+  // Aggregate data per cow from both legacy and V2
   const result = await pool.query(`
+    WITH UnifiedDaily AS (
+      SELECT cow_id, date, feed_given_kg as feed, total_yield_l as milk
+      FROM daily_lane_log
+      WHERE date = $1
+      UNION ALL
+      SELECT cow_id, date, 0 as feed, milk_qty_litre as milk
+      FROM milk_yield_log
+      WHERE date = $1
+    )
     SELECT 
       cow_id,
       date,
-      SUM(feed_given_kg) as total_feed,
-      SUM(total_yield_l) as total_milk,
-      MAX(lane_no)::VARCHAR as lane_id
-    FROM daily_lane_log
-    WHERE date = $1
+      SUM(feed) as total_feed,
+      SUM(milk) as total_milk
+    FROM UnifiedDaily
     GROUP BY cow_id, date
   `, [targetDate]);
   
-  // Insert/update daily_cow_metrics
   for (const row of result.rows) {
     await pool.query(`
-      INSERT INTO daily_cow_metrics (cow_id, date, feed_given_kg, milk_yield_litre, lane_id)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO daily_cow_metrics (cow_id, date, feed_given_kg, milk_yield_litre)
+      VALUES ($1, $2, $3, $4)
       ON CONFLICT (cow_id, date)
       DO UPDATE SET 
         feed_given_kg = $3,
-        milk_yield_litre = $4,
-        lane_id = $5
-    `, [
-      row.cow_id,
-      row.date,
-      row.total_feed,
-      row.total_milk,
-      row.lane_id
-    ]);
+        milk_yield_litre = $4
+    `, [row.cow_id, row.date, row.total_feed, row.total_milk]);
   }
 }
 
@@ -135,407 +133,192 @@ async function syncDailyMetrics(targetDate) {
  * Calculates and stores daily farm summary
  */
 async function calculateDailyFarmSummary(targetDate) {
-  // Sync metrics first
   await syncDailyMetrics(targetDate);
   
-  // Get aggregated totals
+  // Aggregate farm totals
   const totalsResult = await pool.query(`
+    WITH UnifiedSummary AS (
+      SELECT feed_given_kg as feed, total_yield_l as milk
+      FROM daily_lane_log
+      WHERE date = $1
+      UNION ALL
+      SELECT 0 as feed, milk_qty_litre as milk
+      FROM milk_yield_log
+      WHERE date = $1
+      UNION ALL
+      SELECT quantity_kg as feed, 0 as milk
+      FROM feed_log
+      WHERE date = $1
+    )
     SELECT 
-      SUM(feed_given_kg) as total_feed,
-      SUM(total_yield_l) as total_milk
-    FROM daily_lane_log
-    WHERE date = $1
+      COALESCE(SUM(feed), 0) as total_feed,
+      COALESCE(SUM(milk), 0) as total_milk
+    FROM UnifiedSummary
   `, [targetDate]);
   
   const totalFeed = parseFloat(totalsResult.rows[0]?.total_feed || 0);
   const totalMilk = parseFloat(totalsResult.rows[0]?.total_milk || 0);
   
-  // Find best and lowest yielding cows
-  const bestCowResult = await pool.query(`
-    SELECT cow_id, SUM(total_yield_l) as total_milk
-    FROM daily_lane_log
-    WHERE date = $1 AND total_yield_l IS NOT NULL
-    GROUP BY cow_id
-    ORDER BY SUM(total_yield_l) DESC
-    LIMIT 1
+  // Best/Lowest yielding cow (from unified metrics)
+  const bestCowRes = await pool.query(`
+    SELECT cow_id FROM daily_cow_metrics 
+    WHERE date = $1 AND milk_yield_litre > 0
+    ORDER BY milk_yield_litre DESC LIMIT 1
   `, [targetDate]);
   
-  const lowestCowResult = await pool.query(`
-    SELECT cow_id, SUM(total_yield_l) as total_milk
-    FROM daily_lane_log
-    WHERE date = $1 AND total_yield_l IS NOT NULL
-    GROUP BY cow_id
-    ORDER BY SUM(total_yield_l) ASC
-    LIMIT 1
-  `, [targetDate]);
+  const bestCowId = bestCowRes.rows[0]?.cow_id || null;
   
-  const bestCowId = bestCowResult.rows[0]?.cow_id || null;
-  const lowestCowId = lowestCowResult.rows[0]?.cow_id || null;
-  
-  // Upsert summary
   await pool.query(`
-    INSERT INTO daily_farm_summary (date, total_feed_kg, total_milk_litre, best_cow_id, lowest_cow_id)
-    VALUES ($1, $2, $3, $4, $5)
+    INSERT INTO daily_farm_summary (date, total_feed_kg, total_milk_litre, best_cow_id)
+    VALUES ($1, $2, $3, $4)
     ON CONFLICT (date)
-    DO UPDATE SET 
-      total_feed_kg = $2,
-      total_milk_litre = $3,
-      best_cow_id = $4,
-      lowest_cow_id = $5
-  `, [targetDate, totalFeed, totalMilk, bestCowId, lowestCowId]);
+    DO UPDATE SET total_feed_kg = $2, total_milk_litre = $3, best_cow_id = $4
+  `, [targetDate, totalFeed, totalMilk, bestCowId]);
   
-  return { totalFeed, totalMilk, bestCowId, lowestCowId };
+  return { totalFeed, totalMilk, bestCowId };
 }
 
 /**
- * Gets dashboard data for a specific date
+ * Gets dashboard data (Unified)
  */
 export async function getDashboardData(date = null, scope = 'daily') {
   if (scope === 'overall') {
-    const cowsCountResult = await pool.query(`
-      SELECT COUNT(*) as count
-      FROM cows
-      WHERE status = 'active'
-    `);
+    const cowsCountResult = await pool.query("SELECT COUNT(*) as count FROM cows WHERE status = 'active' AND is_active = true");
+    const totalCows = parseInt(cowsCountResult.rows[0]?.count || 0);
 
     const totalsResult = await pool.query(`
-      SELECT
-        COALESCE(SUM(feed_given_kg), 0) as total_feed,
-        COALESCE(SUM(total_yield_l), 0) as total_milk,
-        COUNT(DISTINCT date) as total_days,
-        MIN(date) as first_date,
-        MAX(date) as last_date
-      FROM daily_lane_log
+      WITH CombinedData AS (
+        SELECT feed_given_kg as feed, total_yield_l as milk, date FROM daily_lane_log
+        UNION ALL
+        SELECT 0 as feed, milk_qty_litre as milk, date FROM milk_yield_log
+        UNION ALL
+        SELECT quantity_kg as feed, 0 as milk, date FROM feed_log
+      )
+      SELECT 
+        COALESCE(SUM(feed), 0) as total_feed,
+        COALESCE(SUM(milk), 0) as total_milk,
+        COUNT(DISTINCT date) as total_days
+      FROM CombinedData
     `);
 
-    const lowYieldResult = await pool.query(`
-      SELECT COUNT(DISTINCT cow_id) as count
-      FROM cow_daily_status
-      WHERE status = 'ATTENTION'
-    `);
-
-    const totalCows = parseInt(cowsCountResult.rows[0]?.count || 0);
     const totalFeed = parseFloat(totalsResult.rows[0]?.total_feed || 0);
     const totalMilk = parseFloat(totalsResult.rows[0]?.total_milk || 0);
-    const totalDays = parseInt(totalsResult.rows[0]?.total_days || 0);
-    const yieldFeedRatio = totalFeed > 0 ? totalMilk / totalFeed : 0;
-    const lowYieldCount = parseInt(lowYieldResult.rows[0]?.count || 0);
-    const firstRecordedDate = totalsResult.rows[0]?.first_date
-      ? totalsResult.rows[0].first_date.toISOString().split('T')[0]
-      : null;
-    const lastRecordedDate = totalsResult.rows[0]?.last_date
-      ? totalsResult.rows[0].last_date.toISOString().split('T')[0]
-      : null;
 
     return {
       scope: 'overall',
       totalCows,
       totalMilk: parseFloat(totalMilk.toFixed(2)),
       totalFeed: parseFloat(totalFeed.toFixed(2)),
-      yieldFeedRatio: parseFloat(yieldFeedRatio.toFixed(2)),
-      lowYieldCount,
-      totalRecordedDays: totalDays,
-      firstRecordedDate,
-      lastRecordedDate
+      yieldFeedRatio: totalFeed > 0 ? parseFloat((totalMilk / totalFeed).toFixed(2)) : 0,
+      lowYieldCount: 0,
+      totalRecordedDays: parseInt(totalsResult.rows[0]?.total_days || 0)
     };
   }
 
   const targetDate = date || getTodayDateString();
-  
-  // Calculate summary (ensures data is synced)
   const summary = await calculateDailyFarmSummary(targetDate);
   
-  // Get total cows count (active cows in cows table)
-  const cowsCountResult = await pool.query(`
-    SELECT COUNT(*) as count
-    FROM cows
-    WHERE status = 'active'
-  `);
-  
+  const cowsCountResult = await pool.query("SELECT COUNT(*) as count FROM cows WHERE status = 'active' AND is_active = true");
   const totalCows = parseInt(cowsCountResult.rows[0]?.count || 0);
-  
-  // Calculate yield-to-feed ratio
-  const yieldFeedRatio = summary.totalFeed > 0 
-    ? (summary.totalMilk / summary.totalFeed).toFixed(2)
-    : 0;
-  
-  // Count low-yield cows (ATTENTION status)
-  const lowYieldResult = await pool.query(`
-    SELECT COUNT(DISTINCT cow_id) as count
-    FROM cow_daily_status
-    WHERE date = $1 AND status = 'ATTENTION'
-  `, [targetDate]);
-  
-  const lowYieldCount = parseInt(lowYieldResult.rows[0]?.count || 0);
-  
-  // Calculate statuses for all cows today
-  const allCowsResult = await pool.query(`
-    SELECT cow_id FROM cows WHERE status = 'active'
-  `);
-  
-  // Ensure all active cows have status calculated
-  for (const cow of allCowsResult.rows) {
+
+  // Ensure all active cows have statuses calculated for today
+  const activeCows = await pool.query("SELECT cow_id FROM cows WHERE status = 'active' AND is_active = true");
+  for (const cow of activeCows.rows) {
     await calculateCowStatus(cow.cow_id, targetDate);
   }
-  
+
+  const attentionCount = await pool.query(`
+    SELECT COUNT(*) as count FROM cow_daily_status 
+    WHERE date = $1 AND status = 'ATTENTION'
+  `, [targetDate]);
+
   return {
     scope: 'daily',
     totalCows,
-    totalMilk: parseFloat(summary.totalMilk.toFixed(2)),
-    totalFeed: parseFloat(summary.totalFeed.toFixed(2)),
-    yieldFeedRatio: parseFloat(yieldFeedRatio),
-    lowYieldCount,
+    totalMilk: summary.totalMilk,
+    totalFeed: summary.totalFeed,
+    yieldFeedRatio: summary.totalFeed > 0 ? parseFloat((summary.totalMilk / summary.totalFeed).toFixed(2)) : 0,
+    lowYieldCount: parseInt(attentionCount.rows[0]?.count || 0),
     totalRecordedDays: 1,
     firstRecordedDate: targetDate,
     lastRecordedDate: targetDate
   };
 }
 
-/**
- * Gets cow list with today's metrics and status
- */
 export async function getCowsList(date = null) {
   const targetDate = date || getTodayDateString();
   
-  // Ensure metrics are synced
+  // Sync metrics for the list
   await syncDailyMetrics(targetDate);
-  
-  // Get all active cows with their today's metrics and status
+
   const result = await pool.query(`
     SELECT 
-      c.cow_id,
-      COALESCE(m.milk_yield_litre, 0) as today_milk,
+      c.cow_id, 
+      COALESCE(m.milk_yield_litre, 0) as today_milk, 
       COALESCE(m.feed_given_kg, 0) as today_feed,
-      COALESCE(s.status, 'ATTENTION') as status
+      COALESCE(s.status, 'NORMAL') as status
     FROM cows c
     LEFT JOIN daily_cow_metrics m ON c.cow_id = m.cow_id AND m.date = $1
     LEFT JOIN cow_daily_status s ON c.cow_id = s.cow_id AND s.date = $1
-    WHERE c.status = 'active'
+    WHERE c.status = 'active' AND c.is_active = true
     ORDER BY c.cow_id
   `, [targetDate]);
   
-  // Calculate status for cows that don't have one yet
-  const cowsList = [];
-  for (const row of result.rows) {
-    if (!row.status || row.status === 'ATTENTION' && row.today_milk === 0) {
-      const statusInfo = await calculateCowStatus(row.cow_id, targetDate);
-      row.status = statusInfo.status;
-    }
-    
-    cowsList.push({
-      cowId: row.cow_id,
-      todayMilk: parseFloat(row.today_milk) || 0,
-      todayFeed: parseFloat(row.today_feed) || 0,
-      status: row.status
-    });
-  }
-  
-  return cowsList;
+  return result.rows.map(row => ({
+    cowId: row.cow_id,
+    todayMilk: parseFloat(row.today_milk),
+    todayFeed: parseFloat(row.today_feed),
+    status: row.status
+  }));
 }
 
-/**
- * Calculates 7-day average feed intake for a cow
- */
-async function calculateSevenDayFeedAverage(cowId, targetDate) {
-  const sevenDaysAgo = new Date(targetDate);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // Include today + 6 previous days
-  
-  const result = await pool.query(`
-    SELECT AVG(COALESCE(feed_given_kg, 0)) as avg_feed
-    FROM daily_lane_log
-    WHERE cow_id = $1 
-      AND date >= $2 
-      AND date <= $3
-  `, [cowId, sevenDaysAgo.toISOString().split('T')[0], targetDate]);
-  
-  const avg = result.rows[0]?.avg_feed;
-  return avg ? parseFloat(avg) : 0;
-}
-
-/**
- * Gets detailed cow information with trend data
- */
 export async function getCowDetail(cowId, date = null) {
   const targetDate = date || getTodayDateString();
-  
-  // Get cow basic info with all details
-  const cowResult = await pool.query(`
-    SELECT cow_id, rfid_uid, name, cow_type, breed, date_of_birth, 
-           purchase_date, last_vaccination_date, next_vaccination_date, 
-           number_of_calves, status, notes, created_at, updated_at
-    FROM cows
-    WHERE cow_id = $1
-  `, [cowId]);
-  
-  if (cowResult.rows.length === 0) {
-    throw new Error('Cow not found');
-  }
-  
+  const cowResult = await pool.query("SELECT * FROM cows WHERE cow_id = $1", [cowId]);
+  if (cowResult.rows.length === 0) throw new Error('Cow not found');
   const cow = cowResult.rows[0];
-  
-  // Get today's metrics
-  const todayResult = await pool.query(`
-    SELECT 
-      COALESCE(SUM(feed_given_kg), 0) as feed,
-      COALESCE(SUM(total_yield_l), 0) as milk
-    FROM daily_lane_log
-    WHERE cow_id = $1 AND date = $2
+
+  const metrics = await pool.query(`
+    SELECT milk_yield_litre as milk, feed_given_kg as feed 
+    FROM daily_cow_metrics WHERE cow_id = $1 AND date = $2
   `, [cowId, targetDate]);
-  
-  const today = {
-    milk: parseFloat(todayResult.rows[0]?.milk || 0),
-    feed: parseFloat(todayResult.rows[0]?.feed || 0)
-  };
-  
-  // Calculate 7-day averages
-  const sevenDayAvgMilk = await calculateSevenDayAverage(cowId, targetDate);
-  const sevenDayAvgFeed = await calculateSevenDayFeedAverage(cowId, targetDate);
-  
-  // Get last 7 days historical data for analytics calculations
-  const sevenDaysAgo = new Date(targetDate);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-  
-  const sevenDayHistoryResult = await pool.query(`
-    SELECT 
-      date,
-      COALESCE(SUM(feed_given_kg), 0) as feed,
-      COALESCE(SUM(total_yield_l), 0) as milk
-    FROM daily_lane_log
-    WHERE cow_id = $1 
-      AND date >= $2
-      AND date <= $3
-    GROUP BY date
-    ORDER BY date ASC
-  `, [cowId, sevenDaysAgo.toISOString().split('T')[0], targetDate]);
-  
-  const sevenDayHistory = sevenDayHistoryResult.rows.map(row => ({
-    date: row.date.toISOString().split('T')[0],
-    milk: parseFloat(row.milk || 0),
-    feed: parseFloat(row.feed || 0)
-  }));
-  
-  // Get yield trend (last 14 days)
-  const fourteenDaysAgo = new Date(targetDate);
-  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 13);
-  
-  const trendResult = await pool.query(`
-    SELECT 
-      date,
-      SUM(total_yield_l) as milk
-    FROM daily_lane_log
-    WHERE cow_id = $1 
-      AND date >= $2
-      AND date <= $3
-      AND total_yield_l IS NOT NULL
-    GROUP BY date
-    ORDER BY date ASC
-  `, [cowId, fourteenDaysAgo.toISOString().split('T')[0], targetDate]);
-  
-  const yieldTrend = trendResult.rows.map(row => ({
-    date: row.date.toISOString().split('T')[0],
-    milk: parseFloat(row.milk || 0)
-  }));
-  
+
   return {
-    cowId: cow.cow_id,
-    tagId: cow.rfid_uid || cow.cow_id,
-    name: cow.name,
-    cowType: cow.cow_type,
-    breed: cow.breed,
-    dateOfBirth: cow.date_of_birth,
-    purchaseDate: cow.purchase_date,
-    lastVaccinationDate: cow.last_vaccination_date,
-    nextVaccinationDate: cow.next_vaccination_date,
-    numberOfCalves: cow.number_of_calves,
-    status: cow.status,
-    notes: cow.notes,
-    createdAt: cow.created_at,
-    updatedAt: cow.updated_at,
-    today,
-    sevenDayAverage: parseFloat(sevenDayAvgMilk.toFixed(2)),
-    sevenDayAverageFeed: parseFloat(sevenDayAvgFeed.toFixed(2)),
-    sevenDayHistory,
-    yieldTrend
+    ...cow,
+    today: {
+      milk: parseFloat(metrics.rows[0]?.milk || 0),
+      feed: parseFloat(metrics.rows[0]?.feed || 0)
+    }
   };
 }
 
-/**
- * Gets daily summary for a specific date
- */
 export async function getDailySummary(date) {
-  const summaryResult = await pool.query(`
-    SELECT * FROM daily_farm_summary
-    WHERE date = $1
-  `, [date]);
-  
-  if (summaryResult.rows.length === 0) {
-    // Calculate if not exists
-    await calculateDailyFarmSummary(date);
-    return await getDailySummary(date); // Recursive call
-  }
-  
-  const summary = summaryResult.rows[0];
-  
-  return {
-    date: summary.date.toISOString().split('T')[0],
-    totalFeed: parseFloat(summary.total_feed_kg || 0),
-    totalMilk: parseFloat(summary.total_milk_litre || 0),
-    bestCowId: summary.best_cow_id,
-    lowestCowId: summary.lowest_cow_id
-  };
+  return calculateDailyFarmSummary(date);
 }
 
-/**
- * Gets history log within date range
- */
 export async function getHistoryLog(fromDate, toDate) {
   const result = await pool.query(`
-    SELECT 
-      date,
-      cow_id,
-      SUM(feed_given_kg) as feed,
-      SUM(total_yield_l) as milk,
-      MAX(lane_no)::VARCHAR as lane
-    FROM daily_lane_log
+    SELECT date, cow_id, feed_given_kg as feed, milk_yield_litre as milk
+    FROM daily_cow_metrics 
     WHERE date >= $1 AND date <= $2
-    GROUP BY date, cow_id
     ORDER BY date DESC, cow_id ASC
   `, [fromDate, toDate]);
-  
-  return result.rows.map(row => ({
-    date: row.date.toISOString().split('T')[0],
-    cowId: row.cow_id,
-    feed: parseFloat(row.feed || 0),
-    milk: parseFloat(row.milk || 0),
-    lane: row.lane || '-'
-  }));
+  return result.rows;
 }
 
-/**
- * Gets farm-level Yield-to-Feed ratio history for recent days
- */
 export async function getRatioHistory(days = 30) {
   const fromDate = new Date();
   fromDate.setDate(fromDate.getDate() - days);
-  const fromDateStr = fromDate.toISOString().split('T')[0];
-
-  const result = await pool.query(`
-    SELECT 
-      date,
-      SUM(feed_given_kg) as total_feed,
-      SUM(total_yield_l) as total_milk
-    FROM daily_lane_log
-    WHERE date >= $1
-    GROUP BY date
-    ORDER BY date ASC
-  `, [fromDateStr]);
   
-  return result.rows.map(row => {
-    const feed = parseFloat(row.total_feed || 0);
-    const milk = parseFloat(row.total_milk || 0);
-    return {
-      date: row.date.toISOString().split('T')[0],
-      ratio: feed > 0 ? parseFloat((milk / feed).toFixed(2)) : 0
-    };
-  });
+  const result = await pool.query(`
+    SELECT date, SUM(feed_given_kg) as total_feed, SUM(milk_yield_litre) as total_milk
+    FROM daily_cow_metrics 
+    WHERE date >= $1
+    GROUP BY date ORDER BY date ASC
+  `, [fromDate.toISOString().split('T')[0]]);
+  
+  return result.rows.map(row => ({
+    date: row.date.toISOString().split('T')[0],
+    ratio: row.total_feed > 0 ? parseFloat((row.total_milk / row.total_feed).toFixed(2)) : 0
+  }));
 }

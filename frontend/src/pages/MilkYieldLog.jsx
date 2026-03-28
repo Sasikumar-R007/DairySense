@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { cowsAPI } from '../services/cowsAPI';
 import { milkAPI } from '../services/api';
 import './MilkYieldLog.css';
@@ -102,6 +102,19 @@ function MilkYieldLog() {
         [sessionKey]: value
       }
     }));
+  };
+
+  const handleDeleteLog = async (logId) => {
+    if (window.confirm('Are you sure you want to delete this milk entry?')) {
+      try {
+        await milkAPI.deleteMilkLog(logId);
+        showMessage('success', 'Entry deleted successfully');
+        await loadMilkLog(selectedDate);
+      } catch (error) {
+        console.error('Error deleting milk log:', error);
+        showMessage('error', 'Failed to delete entry');
+      }
+    }
   };
 
   const groupedSavedLogs = useMemo(() => {
@@ -267,8 +280,6 @@ function MilkYieldLog() {
               </table>
             </div>
 
-            {/* Button moved to toolbar */}
-
             <div className="saved-milk-section">
               <h2>Saved Milk Log</h2>
               {savedLogs.length === 0 ? (
@@ -293,9 +304,35 @@ function MilkYieldLog() {
                           return (
                             <tr key={cow.cow_id}>
                               <td>{cow.cow_id}</td>
-                              <td>{row.morning ? Number(row.morning.milk_qty_kg).toFixed(2) : '-'}</td>
+                              <td>
+                                {row.morning ? (
+                                  <>
+                                    {Number(row.morning.milk_qty_kg).toFixed(2)}
+                                    <button 
+                                      className="log-action-btn delete-log-btn" 
+                                      onClick={() => handleDeleteLog(row.morning.id)}
+                                      title="Delete Morning Entry"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </>
+                                ) : '-'}
+                              </td>
                               <td>{row.morning ? Number(row.morning.milk_qty_litre).toFixed(2) : '-'}</td>
-                              <td>{row.evening ? Number(row.evening.milk_qty_kg).toFixed(2) : '-'}</td>
+                              <td>
+                                {row.evening ? (
+                                  <>
+                                    {Number(row.evening.milk_qty_kg).toFixed(2)}
+                                    <button 
+                                      className="log-action-btn delete-log-btn" 
+                                      onClick={() => handleDeleteLog(row.evening.id)}
+                                      title="Delete Evening Entry"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </>
+                                ) : '-'}
+                              </td>
                               <td>{row.evening ? Number(row.evening.milk_qty_litre).toFixed(2) : '-'}</td>
                             </tr>
                           );

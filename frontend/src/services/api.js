@@ -150,6 +150,20 @@ export const feedAPI = {
     return response.data;
   },
 
+  createItem: async (payload) => {
+    return apiRequest('/feed/items', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateItem: async (id, payload) => {
+    return apiRequest(`/feed/items/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
   createFeedLog: async (date, items) => {
     return apiRequest('/feed/log', {
       method: 'POST',
@@ -188,6 +202,19 @@ export const feedAPI = {
     const response = await apiRequest(`/feed/all-logs${query}`);
     return response.data;
   },
+
+  updateFeedLog: async (id, quantityKg) => {
+    return apiRequest(`/feed/log/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ quantity_kg: quantityKg }),
+    });
+  },
+
+  deleteFeedLog: async (id) => {
+    return apiRequest(`/feed/log/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 /**
@@ -222,6 +249,12 @@ export const milkAPI = {
     const response = await apiRequest(`/milk/all-logs${query}`);
     return response.data;
   },
+
+  deleteMilkLog: async (id) => {
+    return apiRequest(`/milk/log/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 /**
@@ -243,6 +276,13 @@ export const medicineAPI = {
   logCowMedicine: async (payload) => {
     return apiRequest('/medicine/log', {
       method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateMedicine: async (id, payload) => {
+    return apiRequest(`/medicine/${id}`, {
+      method: 'PUT',
       body: JSON.stringify(payload),
     });
   },

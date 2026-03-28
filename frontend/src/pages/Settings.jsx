@@ -1,25 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { settingsAPI, userAPI } from '../services/api';
+import { settingsAPI, userAPI, feedAPI, medicineAPI } from '../services/api';
 import { 
-  Save, Shield, User, Bell, Factory, DatabaseBackup, CheckCircle2, Edit3, XCircle
+  Save, Shield, User, Bell, Factory, DatabaseBackup, CheckCircle2, Edit3, XCircle, Wheat, Syringe, Plus, Edit2
 } from 'lucide-react';
 import './Settings.css';
 
 function Settings() {
   const { currentUser } = useAuth();
   const isAdmin = currentUser?.role === 'admin';
-  const [activeTab, setActiveTab] = useState(isAdmin ? 'farm' : 'profile');
+  const isWorker = currentUser?.role === 'worker';
+  const canManageMasterData = isAdmin || isWorker; 
+  
+  const [activeTab, setActiveTab] = useState(canManageMasterData ? 'farm' : 'profile');
   const [isEditing, setIsEditing] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // Admin states
+  // Admin / Global states
   const [farmProfile, setFarmProfile] = useState({ name: '', email: '', phone: '' });
   const [alerts, setAlerts] = useState({ milk_drop_threshold: 2.0, low_feed_threshold: 50, low_medicine_threshold: 10 });
   const [hardware, setHardware] = useState({ rfid_enabled: true, qr_enabled: true });
+
+  // Master Data states
+  const [feedItems, setFeedItems] = useState([]);
+  const [medicines, setMedicines] = useState([]);
+  const [categories, setCategories] = useState([]);
 
   // User states
   const [profileForm, setProfileForm] = useState({ name: '', phoneNumber: '', email: '' });
@@ -32,9 +40,12 @@ function Settings() {
         phoneNumber: currentUser.phoneNumber || '',
         email: currentUser.email || ''
       });
-      if (isAdmin) loadSettings();
+      if (canManageMasterData) {
+        loadSettings();
+        loadMasterData();
+      }
     }
-  }, [currentUser, isAdmin]);
+  }, [currentUser, canManageMasterData]);
 
   const showMessage = (type, text) => {
     setMessage({ type, text });
@@ -61,6 +72,21 @@ function Settings() {
     }
   };
 
+  const loadMasterData = async () => {
+    try {
+      const [items, meds, cats] = await Promise.all([
+        feedAPI.getItems(),
+        medicineAPI.getMedicines(),
+        feedAPI.getCategories()
+      ]);
+      setFeedItems(items);
+      setMedicines(meds);
+      setCategories(cats);
+    } catch (err) {
+      console.error('Failed to load master data:', err);
+    }
+  };
+
   const handleAdminSave = async () => {
     setSaving(true);
     try {
@@ -82,7 +108,7 @@ function Settings() {
     setSaving(true);
     try {
       await userAPI.updateProfile(profileForm);
-      showMessage('success', 'Personal profile updated! (Relogin to see header changes)');
+      showMessage('success', 'Personal profile updated!');
       setIsEditing(false);
     } catch (err) {
       showMessage('error', err.response?.data?.error || err.message || 'Failed to update profile');
@@ -115,9 +141,43 @@ function Settings() {
     setSaving(true);
     try {
       const resp = await settingsAPI.backupDatabase();
-      showMessage('success', `Backup generated! Reference ID: ${resp.backup_id} at ${new Date(resp.timestamp).toLocaleString()}`);
+      showMessage('success', `Backup generated! Reference ID: ${resp.backup_id}`);
     } catch (err) {
       showMessage('error', 'Failed to generate backup');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateFeedItem = async (item) => {
+    const newCost = window.prompt(`Enter default cost for ${item.item_name} (₹/kg):`, item.default_cost_per_unit);
+    if (newCost !== null) {
+      try {
+        setSaving(true);
+        await feedAPI.updateItem(item.id, { default_cost_per_unit: parseFloat(newCost) });
+        showMessage('success', 'Feed item updated');
+        loadMasterData();
+      } catch (err) {
+        showMessage('error', 'Failed to update item');
+      } finally {
+        setSaving(false);
+      }
+    }
+  };
+
+  const handleAddMedicine = async () => {
+    const name = window.prompt('Enter new medicine name:');
+    if (!name) return;
+    const cat = window.prompt('Enter category (Medicine, Supplement, Multivitamin, Treatment):', 'Medicine');
+    if (!cat) return;
+    
+    try {
+      setSaving(true);
+      await medicineAPI.addMedicine({ medicine_name: name, category: cat });
+      showMessage('success', 'Medicine added to master');
+      loadMasterData();
+    } catch (err) {
+      showMessage('error', 'Failed to add medicine');
     } finally {
       setSaving(false);
     }
@@ -144,7 +204,7 @@ function Settings() {
           <XCircle size={16} /> Cancel
         </button>
         <button type="button" className="settings-save-btn" onClick={() => {
-          if (window.confirm('Are you absolutely sure you want to apply these configuration changes?')) {
+          if (window.confirm('Apply these configuration changes?')) {
             saveHandler();
           }
         }} disabled={saving}>
@@ -172,48 +232,40 @@ function Settings() {
 
       <div className="settings-container">
         <div className="settings-sidebar">
-          {isAdmin && (
+          {canManageMasterData && (
             <div className="settings-sidebar-section">
-              <h4>Global Admin</h4>
-              <button 
-                className={`tab-btn ${activeTab === 'farm' ? 'active' : ''}`}
-                onClick={() => handleTabChange('farm')}
-              >
+              <h4>System Master</h4>
+              <button className={`tab-btn ${activeTab === 'farm' ? 'active' : ''}`} onClick={() => handleTabChange('farm')}>
                 <Factory size={16} /> Farm Profile
               </button>
-              <button 
-                className={`tab-btn ${activeTab === 'alerts' ? 'active' : ''}`}
-                onClick={() => handleTabChange('alerts')}
-              >
-                <Bell size={16} /> Alert Thresholds
+              <button className={`tab-btn ${activeTab === 'feed-master' ? 'active' : ''}`} onClick={() => handleTabChange('feed-master')}>
+                <Wheat size={16} /> Feed Items
               </button>
-              <button 
-                className={`tab-btn ${activeTab === 'hardware' ? 'active' : ''}`}
-                onClick={() => handleTabChange('hardware')}
-              >
-                <Shield size={16} /> Hardware Toggles
+              <button className={`tab-btn ${activeTab === 'med-master' ? 'active' : ''}`} onClick={() => handleTabChange('med-master')}>
+                <Syringe size={16} /> Medicines
               </button>
-              <button 
-                className={`tab-btn ${activeTab === 'backup' ? 'active' : ''}`}
-                onClick={() => handleTabChange('backup')}
-              >
-                <DatabaseBackup size={16} /> Database
-              </button>
+              {isAdmin && (
+                <>
+                  <button className={`tab-btn ${activeTab === 'alerts' ? 'active' : ''}`} onClick={() => handleTabChange('alerts')}>
+                    <Bell size={16} /> Alert Thresholds
+                  </button>
+                  <button className={`tab-btn ${activeTab === 'hardware' ? 'active' : ''}`} onClick={() => handleTabChange('hardware')}>
+                    <Shield size={16} /> Hardware
+                  </button>
+                  <button className={`tab-btn ${activeTab === 'backup' ? 'active' : ''}`} onClick={() => handleTabChange('backup')}>
+                    <DatabaseBackup size={16} /> Database
+                  </button>
+                </>
+              )}
             </div>
           )}
 
           <div className="settings-sidebar-section">
             <h4>Personal Account</h4>
-            <button 
-              className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
-              onClick={() => handleTabChange('profile')}
-            >
+            <button className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => handleTabChange('profile')}>
               <User size={16} /> My Profile
             </button>
-            <button 
-              className={`tab-btn ${activeTab === 'security' ? 'active' : ''}`}
-              onClick={() => handleTabChange('security')}
-            >
+            <button className={`tab-btn ${activeTab === 'security' ? 'active' : ''}`} onClick={() => handleTabChange('security')}>
               <Shield size={16} /> Security
             </button>
           </div>
@@ -221,147 +273,167 @@ function Settings() {
 
         <div className="settings-content">
           {loading ? (
-            <div className="settings-loading" style={{ padding: '32px' }}>Loading configuration data from server...</div>
+            <div className="settings-loading" style={{ padding: '32px' }}>Loading data...</div>
           ) : (
-            <>
-              {/* ADMIN: Farm Profile */}
-              {activeTab === 'farm' && isAdmin && (
-                <div className="settings-form-panel">
+            <div className="settings-form-panel">
+              {/* Farm Profile */}
+              {activeTab === 'farm' && (
+                <>
                   <h2>Farm Profile</h2>
                   <p className="panel-desc">Official configuration for PDF reports and system headers.</p>
-                  
                   <div className="settings-form-group">
                     <label>Farm Name</label>
-                    <input type="text" value={farmProfile.name} disabled={!isEditing} onChange={e => setFarmProfile({...farmProfile, name: e.target.value})} placeholder="e.g. DairySense Master Farm" />
+                    <input type="text" value={farmProfile.name} disabled={!isEditing} onChange={e => setFarmProfile({...farmProfile, name: e.target.value})} />
                   </div>
                   <div className="settings-form-group">
                     <label>Contact Email</label>
-                    <input type="email" value={farmProfile.email} disabled={!isEditing} onChange={e => setFarmProfile({...farmProfile, email: e.target.value})} placeholder="Official email address" />
+                    <input type="email" value={farmProfile.email} disabled={!isEditing} onChange={e => setFarmProfile({...farmProfile, email: e.target.value})} />
                   </div>
                   <div className="settings-form-group">
                     <label>Phone Number</label>
-                    <input type="text" value={farmProfile.phone} disabled={!isEditing} onChange={e => setFarmProfile({...farmProfile, phone: e.target.value})} placeholder="Primary contact number" />
+                    <input type="text" value={farmProfile.phone} disabled={!isEditing} onChange={e => setFarmProfile({...farmProfile, phone: e.target.value})} />
                   </div>
-
                   {renderActionButtons(handleAdminSave)}
-                </div>
+                </>
               )}
 
-              {/* ADMIN: Alerts */}
+              {/* Feed Master */}
+              {activeTab === 'feed-master' && (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <h2>Feed Item Master</h2>
+                  </div>
+                  <p className="panel-desc">Configure standard costs and sources for feed logs.</p>
+                  <div className="master-table-wrapper">
+                    <table className="settings-table">
+                      <thead>
+                        <tr>
+                          <th>Item Name</th>
+                          <th>Category</th>
+                          <th>Default Cost (₹)</th>
+                          <th>Default Source</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {feedItems.map(item => (
+                          <tr key={item.id}>
+                            <td>{item.item_name}</td>
+                            <td>{item.category_name}</td>
+                            <td>₹{item.default_cost_per_unit}</td>
+                            <td>{item.default_source}</td>
+                            <td>
+                              <button className="icon-btn" onClick={() => handleUpdateFeedItem(item)} title="Edit Cost">
+                                <Edit2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+
+              {/* Medicine Master */}
+              {activeTab === 'med-master' && (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <h2>Medicine Master</h2>
+                    <button className="add-master-btn" onClick={handleAddMedicine}>
+                      <Plus size={14} /> Add New
+                    </button>
+                  </div>
+                  <p className="panel-desc">Manage the registry of available medicines and treatments.</p>
+                  <div className="master-table-wrapper">
+                    <table className="settings-table">
+                      <thead>
+                        <tr>
+                          <th>Medicine Name</th>
+                          <th>Category</th>
+                          <th>Description</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {medicines.map(med => (
+                          <tr key={med.id}>
+                            <td>{med.medicine_name}</td>
+                            <td className="med-cat-cell">{med.category}</td>
+                            <td className="small-text">{med.description || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+
+              {/* Alerts (Admin) */}
               {activeTab === 'alerts' && isAdmin && (
-                <div className="settings-form-panel">
+                <>
                   <h2>Alert Thresholds</h2>
-                  <p className="panel-desc">Configure the trigger limits for automated system warnings on monitoring pages.</p>
-                  
+                  <p className="panel-desc">Configure automated system warnings.</p>
                   <div className="settings-form-group">
                     <label>Milk Drop Alert Limit (Liters)</label>
                     <input type="number" step="0.5" disabled={!isEditing} value={alerts.milk_drop_threshold} onChange={e => setAlerts({...alerts, milk_drop_threshold: Number(e.target.value)})} />
-                    <span className="help-text">System alerts if a cow's yield drops by this metric compared to yesterday.</span>
                   </div>
                   <div className="settings-form-group">
                     <label>Low Feed Warning (kg)</label>
                     <input type="number" disabled={!isEditing} value={alerts.low_feed_threshold} onChange={e => setAlerts({...alerts, low_feed_threshold: Number(e.target.value)})} />
                   </div>
-                  <div className="settings-form-group">
-                    <label>Low Medicine Stock (Units)</label>
-                    <input type="number" disabled={!isEditing} value={alerts.low_medicine_threshold} onChange={e => setAlerts({...alerts, low_medicine_threshold: Number(e.target.value)})} />
-                  </div>
-
                   {renderActionButtons(handleAdminSave)}
-                </div>
+                </>
               )}
 
-              {/* ADMIN: Hardware */}
-              {activeTab === 'hardware' && isAdmin && (
-                <div className="settings-form-panel">
-                  <h2>Hardware Toggles</h2>
-                  <p className="panel-desc">Enable or suppress hardware scanning flows globally.</p>
-                  
-                  <div className="toggle-group" style={{ opacity: isEditing ? 1 : 0.6 }}>
-                    <label className="toggle-label" style={{ cursor: isEditing ? 'pointer' : 'not-allowed' }}>
-                      <div>
-                        <strong>RFID Integration</strong>
-                        <p>Allow RFID tag mapping on the Add Cow setup phase.</p>
-                      </div>
-                      <input type="checkbox" disabled={!isEditing} checked={hardware.rfid_enabled} onChange={e => setHardware({...hardware, rfid_enabled: e.target.checked})} />
-                    </label>
-                  </div>
-                  <div className="toggle-group" style={{ opacity: isEditing ? 1 : 0.6 }}>
-                    <label className="toggle-label" style={{ cursor: isEditing ? 'pointer' : 'not-allowed' }}>
-                      <div>
-                        <strong>QR Code Scanning</strong>
-                        <p>Allow QR scanning generation and reading.</p>
-                      </div>
-                      <input type="checkbox" disabled={!isEditing} checked={hardware.qr_enabled} onChange={e => setHardware({...hardware, qr_enabled: e.target.checked})} />
-                    </label>
-                  </div>
-
-                  {renderActionButtons(handleAdminSave)}
-                </div>
-              )}
-
-              {/* ADMIN: Backup */}
-              {activeTab === 'backup' && isAdmin && (
-                <div className="settings-form-panel">
-                  <h2>Database Controls</h2>
-                  <p className="panel-desc">Extract raw snapshots of the PostgreSQL database natively to JSON.</p>
-                  
-                  <div className="danger-zone">
-                    <h3>Generate Data Backup</h3>
-                    <p>This action computes a unified ledger block across cows, milk, and feed logs returning a traceable backup ID.</p>
-                    <button type="button" className="settings-backup-btn" onClick={() => {
-                      if(window.confirm('Execute raw database snapshot pull?')) {
-                        handleBackup();
-                      }
-                    }} disabled={saving}>
-                      <DatabaseBackup size={16} /> {saving ? 'Generating...' : 'Run Backup Sequence'}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* USER: Profile */}
+              {/* Profile */}
               {activeTab === 'profile' && (
-                <form className="settings-form-panel" onSubmit={(e) => e.preventDefault()}>
+                <>
                   <h2>Personal Profile</h2>
                   <p className="panel-desc">Change your localized identity settings.</p>
-                  
                   <div className="settings-form-group">
-                    <label>Full Display Name</label>
+                    <label>Display Name</label>
                     <input type="text" disabled={!isEditing} value={profileForm.name} onChange={e => setProfileForm({...profileForm, name: e.target.value})} />
-                  </div>
-                  <div className="settings-form-group">
-                    <label>Mobile Number</label>
-                    <input type="text" disabled={!isEditing} value={profileForm.phoneNumber} onChange={e => setProfileForm({...profileForm, phoneNumber: e.target.value})} />
                   </div>
                   <div className="settings-form-group">
                     <label>Email Address</label>
                     <input type="email" disabled={!isEditing} value={profileForm.email} onChange={e => setProfileForm({...profileForm, email: e.target.value})} />
                   </div>
-
                   {renderActionButtons(handleProfileSave)}
-                </form>
+                </>
               )}
 
-              {/* USER: Security */}
+              {/* Security */}
               {activeTab === 'security' && (
-                <form className="settings-form-panel" onSubmit={(e) => e.preventDefault()}>
+                <>
                   <h2>Security Credentials</h2>
                   <p className="panel-desc">Change your master login password.</p>
-                  
                   <div className="settings-form-group">
                     <label>New Password</label>
-                    <input type="password" disabled={!isEditing} value={passwordForm.password} onChange={e => setPasswordForm({...passwordForm, password: e.target.value})} placeholder="Minimum 6 characters" required />
+                    <input type="password" disabled={!isEditing} value={passwordForm.password} onChange={e => setPasswordForm({...passwordForm, password: e.target.value})} />
                   </div>
                   <div className="settings-form-group">
-                    <label>Confirm New Password</label>
-                    <input type="password" disabled={!isEditing} value={passwordForm.confirmPassword} onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} placeholder="Repeat the precise password above" required />
+                    <label>Confirm Password</label>
+                    <input type="password" disabled={!isEditing} value={passwordForm.confirmPassword} onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} />
                   </div>
-
                   {renderActionButtons(handlePasswordSave)}
-                </form>
+                </>
               )}
-            </>
+
+              {/* Backup */}
+              {activeTab === 'backup' && isAdmin && (
+                <>
+                  <h2>Database Controls</h2>
+                  <p className="panel-desc">Extract raw snapshots of the database.</p>
+                  <div className="danger-zone">
+                    <h3>Generate Data Backup</h3>
+                    <p>Computes a unified ledger block across cows, milk, and feed logs.</p>
+                    <button type="button" className="settings-backup-btn" onClick={handleBackup} disabled={saving}>
+                      <DatabaseBackup size={16} /> Run Backup Sequence
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ChevronLeft, ChevronRight, Edit2 } from 'lucide-react';
 import { feedAPI } from '../services/api';
 import './FeedLog.css';
 
@@ -120,6 +120,41 @@ function FeedLog() {
     });
   };
 
+  const handleDeleteLog = async (logId) => {
+    if (window.confirm('Are you sure you want to delete this log entry?')) {
+      try {
+        await feedAPI.deleteFeedLog(logId);
+        showMessage('success', 'Entry deleted successfully');
+        await loadFeedLog(selectedDate);
+      } catch (error) {
+        console.error('Error deleting log:', error);
+        showMessage('error', 'Failed to delete entry');
+      }
+    }
+  };
+
+  const handleEditLog = async (log) => {
+    const newQuantity = window.prompt(`Enter new quantity for ${log.item_name} (kg):`, log.quantity_kg);
+    if (newQuantity !== null) {
+      const quantity = parseFloat(newQuantity);
+      if (isNaN(quantity) || quantity <= 0) {
+        return showMessage('error', 'Please enter a valid quantity');
+      }
+      
+      try {
+        setSaving(true);
+        await feedAPI.updateFeedLog(log.id, quantity);
+        showMessage('success', 'Quantity updated successfully');
+        await loadFeedLog(selectedDate);
+      } catch (error) {
+        console.error('Error updating log:', error);
+        showMessage('error', 'Failed to update quantity');
+      } finally {
+        setSaving(false);
+      }
+    }
+  };
+
   const getItemsForCategory = (categoryId) =>
     items.filter((item) => String(item.category_id) === String(categoryId));
 
@@ -174,7 +209,7 @@ function FeedLog() {
           <div className="feed-log-field">
             <label htmlFor="feed-log-date">Select Date</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button type="button" onClick={() => changeDate(-1)} style={{ padding: '8px', cursor: 'pointer', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', color: '#475569' }}>
+              <button type="button" onClick={() => changeDate(-1)} style={{ padding: '8px', cursor: 'pointer', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', color: '#4475569' }}>
                 <ChevronLeft size={16} />
               </button>
               <input
@@ -287,6 +322,7 @@ function FeedLog() {
                         <th>Cost</th>
                         <th>Total Amount</th>
                         <th>Source</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -298,6 +334,22 @@ function FeedLog() {
                           <td>{Number(log.cost_per_unit).toFixed(2)}</td>
                           <td>{Number(log.total_amount).toFixed(2)}</td>
                           <td>{log.input_source}</td>
+                          <td className="actions-cell">
+                            <button 
+                              className="log-action-btn edit-log-btn" 
+                              onClick={() => handleEditLog(log)}
+                              title="Edit Quantity"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button 
+                              className="log-action-btn delete-log-btn" 
+                              onClick={() => handleDeleteLog(log.id)}
+                              title="Delete Entry"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>

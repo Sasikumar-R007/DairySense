@@ -10,7 +10,11 @@ import {
   getFeedLogByDate,
   getFeedItems,
   getFeedCategories,
-  getAllFeedLogs
+  getAllFeedLogs,
+  updateFeedLog,
+  deleteFeedLog,
+  createFeedItem,
+  updateFeedItem
 } from '../services/feedService.js';
 import {
   getWeightGroups,
@@ -38,6 +42,27 @@ router.get('/items', async (req, res) => {
     res.json({ data: items });
   } catch (error) {
     console.error('Error fetching feed items:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/items', async (req, res) => {
+  try {
+    const newItem = await createFeedItem(req.body);
+    res.status(201).json({ data: newItem });
+  } catch (error) {
+    console.error('Error creating feed item:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/items/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedItem = await updateFeedItem(id, req.body);
+    res.json({ data: updatedItem });
+  } catch (error) {
+    console.error('Error updating feed item:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -118,6 +143,30 @@ router.get('/all-logs', async (req, res) => {
   } catch (error) {
     console.error('Error fetching all feed logs:', error);
     res.status(500).json({ error: 'Failed to fetch feed records' });
+  }
+});
+
+router.put('/log/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { quantity_kg } = req.body;
+    const updatedLog = await updateFeedLog(id, quantity_kg);
+    res.json({ message: 'Feed log updated successfully', data: updatedLog });
+  } catch (error) {
+    console.error('Error updating feed log:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/log/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedLog = await deleteFeedLog(id);
+    if (!deletedLog) return res.status(404).json({ error: 'Log not found' });
+    res.json({ message: 'Feed log deleted successfully', data: deletedLog });
+  } catch (error) {
+    console.error('Error deleting feed log:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

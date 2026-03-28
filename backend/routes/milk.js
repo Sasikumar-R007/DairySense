@@ -9,7 +9,8 @@ import {
   createMilkLog,
   getMilkLogByDate,
   getMilkLogByCow,
-  getAllMilkLogs
+  getAllMilkLogs,
+  deleteMilkLog
 } from '../services/milkService.js';
 
 const router = express.Router();
@@ -69,6 +70,18 @@ router.get('/cow/:cowId', async (req, res) => {
     console.error('Error fetching milk logs by cow:', error);
     const statusCode = error.message.includes('required') ? 400 : 500;
     res.status(statusCode).json({ error: error.message });
+  }
+});
+
+router.delete('/log/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedLog = await deleteMilkLog(id);
+    if (!deletedLog) return res.status(404).json({ error: 'Log not found' });
+    res.json({ message: 'Milk log deleted successfully', data: deletedLog });
+  } catch (error) {
+    console.error('Error deleting milk log:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

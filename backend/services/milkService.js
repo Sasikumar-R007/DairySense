@@ -223,3 +223,14 @@ export async function getAllMilkLogs(startDate, endDate) {
   const result = await pool.query(queryStr, queryParams);
   return result.rows;
 }
+
+/**
+ * Delete milk log
+ */
+export async function deleteMilkLog(id) {
+  const result = await pool.query(
+    'DELETE FROM milk_yield_log WHERE id = $1 RETURNING *',
+    [id]
+  );
+  return result.rows.length > 0 ? result.rows[0] : null;
+}

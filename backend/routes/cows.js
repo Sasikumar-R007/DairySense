@@ -320,5 +320,22 @@ router.post('/:cowId/medications', async (req, res) => {
   }
 });
 
+// Delete cow
+router.delete('/:cowId', async (req, res) => {
+  try {
+    const { cowId } = req.params;
+    const cow = await deleteCow(cowId);
+    
+    if (!cow) {
+      return res.status(404).json({ error: 'Cow not found' });
+    }
+    
+    res.json({ message: 'Cow deleted successfully', data: cow });
+  } catch (error) {
+    console.error('Error deleting cow:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
 

@@ -674,3 +674,15 @@ export async function getCowReadOnlyProfile(cowId) {
     }
   };
 }
+
+/**
+ * Delete cow
+ */
+export async function deleteCow(cowId) {
+  const result = await pool.query(
+    'DELETE FROM cows WHERE cow_id = $1 RETURNING *',
+    [cowId]
+  );
+
+  return result.rows.length > 0 ? result.rows[0] : null;
+}

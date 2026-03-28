@@ -158,6 +158,26 @@
   color: #e65100;
 }
 
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 10px;
+}
+
+.status-badge.active {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.status-badge.inactive {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
 .warning {
   color: #dc3545;
   font-weight: 600;
@@ -288,6 +308,44 @@
 .save-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+}
+
+.delete-button {
+  background: white;
+  color: var(--error);
+  border: 1px solid var(--error);
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-right: auto; /* Push delete to the left */
+}
+
+.delete-button:hover {
+  background: var(--error-light);
+  color: white;
+}
+
+.delete-header-btn {
+  background: transparent;
+  color: var(--error);
+  border: 1px solid var(--error);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.delete-header-btn:hover {
+  background: var(--error);
+  color: white;
 }
 
 .empty-state {

@@ -20,6 +20,8 @@ import reportRoutes from './routes/report.js';
 import usersRoutes from './routes/users.js';
 import settingsRoutes from './routes/settings.js';
 
+console.log('🚀 Loading routes...');
+
 dotenv.config();
 
 const app = express();
@@ -55,6 +57,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/report', reportRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/settings', settingsRoutes);
+console.log('✅ All routes mounted');
 
 // Error handling middleware
 app.use((err, req, res, next) => {

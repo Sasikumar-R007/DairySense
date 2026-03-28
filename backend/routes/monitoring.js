@@ -7,8 +7,10 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import * as monitoringService from '../services/monitoringService.js';
+import pool from '../config/database.js';
 
 const router = express.Router();
+console.log('📊 Monitoring router initialized');
 
 /**
  * GET /api/monitoring/dashboard
@@ -18,6 +20,7 @@ const router = express.Router();
 router.get('/dashboard', authenticateToken, async (req, res) => {
   try {
     const { date, scope } = req.query;
+    console.log(`📊 Fetching dashboard for ${date} (${scope})`);
     const data = await monitoringService.getDashboardData(date || null, scope || 'daily');
     res.json(data);
   } catch (error) {

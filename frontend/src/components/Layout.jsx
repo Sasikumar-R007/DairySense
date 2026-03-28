@@ -27,10 +27,10 @@ function Layout() {
   const isWorker = currentUser?.role === 'worker';
   const perms = currentUser?.permissions || {};
 
-  const canManageMedicine = !isWorker || perms.canManageMedicine;
-  const canManageActivities = !isWorker || perms.canManageActivities;
-  const canViewReports = !isWorker || perms.canViewReports;
-  const canManageSettings = !isWorker || perms.canManageSettings;
+  const canManageMedicine = true; // Workers now have master access
+  const canManageActivities = true;
+  const canViewReports = true;
+  const canManageSettings = true;
 
   const handleLogout = async () => {
     if (window.confirm("Are you sure you want to log out?")) {

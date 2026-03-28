@@ -68,6 +68,27 @@ export async function addMedicine({ medicine_name, category, description }) {
   return result.rows[0];
 }
 
+export async function updateMedicine(id, { medicine_name, category, description }) {
+  const normalizedCategory = category ? normalizeCategory(category) : null;
+
+  const result = await pool.query(
+    `UPDATE medicine_master
+     SET medicine_name = COALESCE($1, medicine_name),
+         category = COALESCE($2, category),
+         description = COALESCE($3, description),
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = $4
+     RETURNING *`,
+    [medicine_name ? medicine_name.trim() : null, normalizedCategory, description, id]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error('Medicine not found');
+  }
+
+  return result.rows[0];
+}
+
 export async function logCowMedicine({
   cow_id,
   medicine_id,

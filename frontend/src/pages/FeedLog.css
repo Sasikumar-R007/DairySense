@@ -146,6 +146,39 @@
   width: 64px;
 }
 
+.log-action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.edit-log-btn {
+  color: #1d4ed8;
+}
+
+.edit-log-btn:hover {
+  background: #eff6ff;
+}
+
+.delete-log-btn {
+  color: #b91c1c;
+}
+
+.delete-log-btn:hover {
+  background: #fef2f2;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+}
+
 .saved-log-section {
   margin-top: 32px;
 }

@@ -50,6 +50,40 @@ export async function getFeedItems() {
   return result.rows;
 }
 
+export async function createFeedItem({ category_id, item_name, default_unit, default_cost_per_unit, default_source }) {
+  if (!category_id || !item_name) {
+    throw new Error('category_id and item_name are required');
+  }
+
+  const result = await pool.query(
+    `INSERT INTO feed_item_master (category_id, item_name, default_unit, default_cost_per_unit, default_source)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+    [category_id, item_name.trim(), default_unit || 'kg', default_cost_per_unit || 0, default_source || 'Purchased']
+  );
+
+  return result.rows[0];
+}
+
+export async function updateFeedItem(id, { item_name, default_cost_per_unit, default_source }) {
+  const result = await pool.query(
+    `UPDATE feed_item_master
+     SET item_name = COALESCE($1, item_name),
+         default_cost_per_unit = COALESCE($2, default_cost_per_unit),
+         default_source = COALESCE($3, default_source),
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = $4
+     RETURNING *`,
+    [item_name ? item_name.trim() : null, default_cost_per_unit, default_source, id]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error('Feed item not found');
+  }
+
+  return result.rows[0];
+}
+
 export async function createFeedLog(date, items = []) {
   if (!date) {
     throw new Error('date is required');
@@ -190,4 +224,43 @@ export async function getAllFeedLogs(startDate, endDate) {
 
   const result = await pool.query(queryStr, queryParams);
   return result.rows;
+}
+
+/**
+ * Update feed log
+ */
+export async function updateFeedLog(id, quantityKg) {
+  const quantity = parseFloat(quantityKg);
+  if (!Number.isFinite(quantity) || quantity < 0) {
+    throw new Error('quantity_kg must be a valid non-negative number');
+  }
+
+  // Get current log to recalculate totals
+  const currentLog = await pool.query('SELECT cost_per_unit FROM feed_log WHERE id = $1', [id]);
+  if (currentLog.rows.length === 0) {
+    throw new Error('Feed log entry not found');
+  }
+
+  const totalAmount = parseFloat((quantity * parseFloat(currentLog.rows[0].cost_per_unit)).toFixed(2));
+
+  const result = await pool.query(
+    `UPDATE feed_log
+     SET quantity_kg = $1, total_amount = $2, updated_at = CURRENT_TIMESTAMP
+     WHERE id = $3
+     RETURNING *`,
+    [quantity, totalAmount, id]
+  );
+
+  return result.rows[0];
+}
+
+/**
+ * Delete feed log
+ */
+export async function deleteFeedLog(id) {
+  const result = await pool.query(
+    'DELETE FROM feed_log WHERE id = $1 RETURNING *',
+    [id]
+  );
+  return result.rows.length > 0 ? result.rows[0] : null;
 }

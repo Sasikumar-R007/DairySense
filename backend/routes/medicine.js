@@ -8,6 +8,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import {
   getMedicines,
   addMedicine,
+  updateMedicine,
   logCowMedicine,
   getCowMedicineHistory
 } from '../services/medicineService.js';
@@ -35,6 +36,18 @@ router.post('/', async (req, res) => {
     const statusCode = error.message.includes('required') || error.message.includes('category')
       ? 400
       : 500;
+    res.status(statusCode).json({ error: error.message });
+  }
+});
+
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const medicine = await updateMedicine(id, req.body);
+    res.json({ message: 'Medicine updated successfully', data: medicine });
+  } catch (error) {
+    console.error('Error updating medicine:', error);
+    const statusCode = error.message.includes('not found') ? 404 : 500;
     res.status(statusCode).json({ error: error.message });
   }
 });

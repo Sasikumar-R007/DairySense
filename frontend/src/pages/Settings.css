@@ -349,3 +349,88 @@
   cursor: not-allowed;
   border-color: #e2e8f0;
 }
+
+/* Master Data Table Styles */
+.master-table-wrapper {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.settings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.settings-table th {
+  background: #f8fafc;
+  text-align: left;
+  padding: 12px 16px;
+  color: #64748b;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.settings-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+}
+
+.settings-table tr:last-child td {
+  border-bottom: none;
+}
+
+.settings-table tr:hover {
+  background: #fdfdfd;
+}
+
+.med-cat-cell {
+  color: #2563eb;
+  font-weight: 500;
+}
+
+.small-text {
+  font-size: 12px;
+  color: #64748b;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.add-master-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 0.5rem;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-master-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.icon-btn:hover {
+  background: #f1f5f9;
+  color: #2563eb;
+}

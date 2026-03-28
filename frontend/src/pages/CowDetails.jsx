@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Power, PowerOff } from 'lucide-react';
 import { cowsAPI } from '../services/cowsAPI';
 import { medicineAPI } from '../services/api';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -28,6 +28,7 @@ function CowDetails() {
     last_vaccination_date: '',
     next_vaccination_date: '',
     number_of_calves: 0,
+    is_active: true,
     notes: ''
   });
 
@@ -62,6 +63,7 @@ function CowDetails() {
         last_vaccination_date: cowData.last_vaccination_date || '',
         next_vaccination_date: cowData.next_vaccination_date || '',
         number_of_calves: cowData.number_of_calves || 0,
+        is_active: cowData.is_active !== false,
         notes: cowData.notes || ''
       });
 
@@ -112,6 +114,7 @@ function CowDetails() {
         last_vaccination_date: cow.last_vaccination_date || '',
         next_vaccination_date: cow.next_vaccination_date || '',
         number_of_calves: cow.number_of_calves || 0,
+        is_active: cow.is_active !== false,
         notes: cow.notes || ''
       });
     }
@@ -129,11 +132,24 @@ function CowDetails() {
     }
   };
 
+  const handleDelete = async () => {
+    if (window.confirm('Are you absolutely SURE you want to delete this cow? All history and records will remain in logs but the animal record will be removed from directory.')) {
+      try {
+        await cowsAPI.deleteCow(cowId);
+        showMessage('success', 'Cow deleted successfully');
+        setTimeout(() => navigate('/cows'), 1500);
+      } catch (error) {
+        console.error('Error deleting cow:', error);
+        showMessage('error', `Failed to delete: ${error.message}`);
+      }
+    }
+  };
+
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setEditForm(prev => ({
       ...prev,
-      [name]: name === 'number_of_calves' ? parseInt(value) || 0 : value
+      [name]: type === 'checkbox' ? checked : (name === 'number_of_calves' ? parseInt(value) || 0 : value)
     }));
   };
 
@@ -163,13 +179,24 @@ function CowDetails() {
               <ArrowLeft size={20} />
               <span>Back</span>
             </button>
-            <h2>Cow Details: {cow.cow_id}</h2>
+            <h2>
+              Cow Details: {cow.cow_id}
+              <span className={`status-badge ${cow.is_active ? 'active' : 'inactive'}`}>
+                {cow.is_active ? 'Active' : 'Inactive'}
+              </span>
+            </h2>
           </div>
           {!editing && (
-            <button onClick={handleEdit} className="edit-button">
-              <Edit size={18} />
-              <span>Edit Details</span>
-            </button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={handleDelete} className="delete-header-btn">
+                <Trash2 size={18} />
+                <span>Delete</span>
+              </button>
+              <button onClick={handleEdit} className="edit-button">
+                <Edit size={18} />
+                <span>Edit Details</span>
+              </button>
+            </div>
           )}
         </div>
 
@@ -195,6 +222,37 @@ function CowDetails() {
                   />
                 </div>
                 <div className="form-group">
+                  <label>Status</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '5px' }}>
+                    <button 
+                      type="button"
+                      className={`status-toggle ${editForm.is_active ? 'active' : ''}`}
+                      onClick={() => setEditForm(prev => ({ ...prev, is_active: !prev.is_active }))}
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px', 
+                        padding: '8px 16px', 
+                        borderRadius: '20px', 
+                        border: '1px solid #ddd',
+                        background: editForm.is_active ? 'var(--success-light)' : '#f1f5f9',
+                        color: editForm.is_active ? 'var(--success)' : '#64748b',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {editForm.is_active ? <Power size={16} /> : <PowerOff size={16} />}
+                      {editForm.is_active ? 'Mark Inactive' : 'Mark Active'}
+                    </button>
+                    <span style={{ fontSize: '13px', color: '#666' }}>
+                      {editForm.is_active ? 'Animal is currently in active production' : 'Animal is currently retired or inactive'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="form-row">
+                <div className="form-group">
                   <label>Cow Type</label>
                   <select
                     name="cow_type"
@@ -206,9 +264,6 @@ function CowDetails() {
                     <option value="dry">Dry</option>
                   </select>
                 </div>
-              </div>
-              
-              <div className="form-row">
                 <div className="form-group">
                   <label>Breed</label>
                   <input
@@ -218,6 +273,9 @@ function CowDetails() {
                     onChange={handleInputChange}
                   />
                 </div>
+              </div>
+              
+              <div className="form-row">
                 <div className="form-group">
                   <label>Number of Calves</label>
                   <input
@@ -228,9 +286,6 @@ function CowDetails() {
                     min="0"
                   />
                 </div>
-              </div>
-
-              <div className="form-row">
                 <div className="form-group">
                   <label>Date of Birth</label>
                   <input
@@ -240,6 +295,9 @@ function CowDetails() {
                     onChange={handleInputChange}
                   />
                 </div>
+              </div>
+
+              <div className="form-row">
                 <div className="form-group">
                   <label>Purchase Date</label>
                   <input
@@ -249,9 +307,6 @@ function CowDetails() {
                     onChange={handleInputChange}
                   />
                 </div>
-              </div>
-
-              <div className="form-row">
                 <div className="form-group">
                   <label>Last Vaccination Date</label>
                   <input
@@ -261,6 +316,9 @@ function CowDetails() {
                     onChange={handleInputChange}
                   />
                 </div>
+              </div>
+
+              <div className="form-row">
                 <div className="form-group">
                   <label>Next Vaccination Date</label>
                   <input
@@ -283,12 +341,17 @@ function CowDetails() {
               </div>
 
               <div className="edit-actions">
-                <button onClick={handleCancelEdit} className="cancel-button">
-                  Cancel
+                <button onClick={handleDelete} className="delete-button">
+                  <Trash2 size={18} /> Delete Cow Record
                 </button>
-                <button onClick={handleSave} className="save-button">
-                  Save Changes
-                </button>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <button onClick={handleCancelEdit} className="cancel-button">
+                    Cancel
+                  </button>
+                  <button onClick={handleSave} className="save-button">
+                    Save Changes
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -485,5 +548,3 @@ function CowDetails() {
 }
 
 export default CowDetails;
-
-
