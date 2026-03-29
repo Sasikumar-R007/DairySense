@@ -52,10 +52,10 @@ function FeedMasterLog({ isEmbedded = false }) {
     }
     
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Date,Category,Feed Item,Quantity (kg),Cost/Unit (₹),Total Amount (₹),Source\n";
+    csvContent += "Date,Cow ID,Session,Category,Feed Type,Quantity (kg)\n";
     
     data.forEach(row => {
-      const line = `${new Date(row.date).toLocaleDateString()},${row.category_name},${row.item_name},${row.quantity_kg},${row.cost_per_unit},${row.total_amount},${row.input_source}`;
+      const line = `${new Date(row.date).toLocaleDateString()},${row.cow_id || 'Global Bulk'},${row.session},${row.category_name},${row.item_name},${row.quantity_kg}`;
       csvContent += line + "\n";
     });
     
@@ -142,35 +142,27 @@ function FeedMasterLog({ isEmbedded = false }) {
             <thead>
               <tr>
                 <th>Date</th>
+                <th>Cow ID</th>
+                <th>Session</th>
                 <th>Category</th>
-                <th>Feed Item</th>
+                <th>Feed Type</th>
                 <th>Quantity (kg)</th>
-                <th>Cost/Unit (₹)</th>
-                <th>Total (₹)</th>
-                <th>Source</th>
               </tr>
             </thead>
             <tbody>
-              {data.map((row) => {
-                const isPurchased = row.input_source.toLowerCase().includes('purchase');
-                return (
+              {data.map((row) => (
                   <tr key={row.id}>
                     <td>{new Date(row.date).toLocaleDateString()}</td>
+                    <td><strong>{row.cow_id || 'Global'}</strong></td>
+                    <td style={{ textTransform: 'capitalize' }}>{row.session || '-'}</td>
                     <td>
                       <span className="category-badge">{row.category_name}</span>
                     </td>
                     <td>{row.item_name}</td>
                     <td className="highlight-green">{Number(row.quantity_kg).toFixed(1)}</td>
-                    <td className="cost-cell">₹{Number(row.cost_per_unit).toFixed(2)}</td>
-                    <td className="cost-cell highlight-green">₹{Number(row.total_amount).toFixed(2)}</td>
-                    <td>
-                      <span className={`source-badge ${isPurchased ? 'purchased' : 'farm-produced'}`}>
-                        {row.input_source}
-                      </span>
-                    </td>
                   </tr>
-                );
-              })}
+                )
+              )}
             </tbody>
           </table>
         )}

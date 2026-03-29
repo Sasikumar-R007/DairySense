@@ -116,4 +116,15 @@ router.get('/ratio-history', authenticateToken, async (req, res) => {
   }
 });
 
+router.get('/performance-history', authenticateToken, async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 30;
+    const data = await monitoringService.getFarmPerformanceHistory(days);
+    res.json({ data });
+  } catch (error) {
+    console.error('Error fetching performance history:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

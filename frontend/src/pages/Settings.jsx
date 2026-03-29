@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { settingsAPI, userAPI, feedAPI, medicineAPI } from '../services/api';
 import { 
-  Save, Shield, User, Bell, Factory, DatabaseBackup, CheckCircle2, Edit3, XCircle, Wheat, Syringe, Plus, Edit2
+  Save, Shield, User, Bell, Factory, DatabaseBackup, CheckCircle2, Edit3, XCircle, Wheat, Syringe, Plus, Edit2, Trash2, Settings as CogIcon
 } from 'lucide-react';
 import './Settings.css';
 
@@ -23,11 +23,16 @@ function Settings() {
   const [farmProfile, setFarmProfile] = useState({ name: '', email: '', phone: '' });
   const [alerts, setAlerts] = useState({ milk_drop_threshold: 2.0, low_feed_threshold: 50, low_medicine_threshold: 10 });
   const [hardware, setHardware] = useState({ rfid_enabled: true, qr_enabled: true });
+  const [cowFormSettings, setCowFormSettings] = useState({ breeds: ['HF', 'Jersey', 'Gir', 'Other'], cow_types: ['normal', 'milking', 'pregnant', 'dry', 'calf', 'Other'] });
 
-  // Master Data states
+  // Master Data states & Modals
   const [feedItems, setFeedItems] = useState([]);
   const [medicines, setMedicines] = useState([]);
   const [categories, setCategories] = useState([]);
+  
+  const [feedModal, setFeedModal] = useState({ show: false, mode: 'add', data: { item_name: '', category_id: '', default_cost_per_unit: '', default_source: 'Purchased' } });
+  const [medModal, setMedModal] = useState({ show: false, mode: 'add', data: { medicine_name: '', category: 'Medicine', description: '' } });
+  const [cowTypeModal, setCowTypeModal] = useState({ show: false, field: '', label: '', val: '' });
 
   // User states
   const [profileForm, setProfileForm] = useState({ name: '', phoneNumber: '', email: '' });
@@ -64,6 +69,7 @@ function Settings() {
       if (data.farm_profile) setFarmProfile(data.farm_profile);
       if (data.alerts) setAlerts(data.alerts);
       if (data.hardware) setHardware(data.hardware);
+      if (data.cow_form_options) setCowFormSettings(data.cow_form_options);
     } catch (err) {
       console.error(err);
       showMessage('error', 'Failed to load system settings');
@@ -93,7 +99,8 @@ function Settings() {
       await settingsAPI.updateSettings({
         farm_profile: farmProfile,
         alerts,
-        hardware
+        hardware,
+        cow_form_options: cowFormSettings
       });
       showMessage('success', 'System settings updated successfully!');
       setIsEditing(false);
@@ -149,38 +156,89 @@ function Settings() {
     }
   };
 
-  const handleUpdateFeedItem = async (item) => {
-    const newCost = window.prompt(`Enter default cost for ${item.item_name} (₹/kg):`, item.default_cost_per_unit);
-    if (newCost !== null) {
-      try {
-        setSaving(true);
-        await feedAPI.updateItem(item.id, { default_cost_per_unit: parseFloat(newCost) });
-        showMessage('success', 'Feed item updated');
-        loadMasterData();
-      } catch (err) {
-        showMessage('error', 'Failed to update item');
-      } finally {
-        setSaving(false);
-      }
-    }
-  };
-
-  const handleAddMedicine = async () => {
-    const name = window.prompt('Enter new medicine name:');
-    if (!name) return;
-    const cat = window.prompt('Enter category (Medicine, Supplement, Multivitamin, Treatment):', 'Medicine');
-    if (!cat) return;
-    
+  const handleSaveFeedItem = async () => {
+    if (!feedModal.data.item_name || !feedModal.data.category_id) return showMessage('error', 'Item name and category required');
     try {
       setSaving(true);
-      await medicineAPI.addMedicine({ medicine_name: name, category: cat });
-      showMessage('success', 'Medicine added to master');
+      if (feedModal.mode === 'add') {
+        await feedAPI.createItem(feedModal.data);
+        showMessage('success', 'Feed item created');
+      } else {
+        await feedAPI.updateItem(feedModal.data.id, feedModal.data);
+        showMessage('success', 'Feed item updated');
+      }
+      setFeedModal({ show: false, mode: 'add', data: {} });
       loadMasterData();
     } catch (err) {
-      showMessage('error', 'Failed to add medicine');
+      showMessage('error', 'Failed to save feed item');
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDeleteFeedItem = async (id) => {
+    if (!window.confirm("Delete this Feed Item? Historical logs will be preserved but it won't be available for new logs.")) return;
+    try {
+      setSaving(true);
+      await feedAPI.deleteItem(id);
+      loadMasterData();
+      showMessage('success', 'Feed item deleted');
+    } catch (err) {
+      showMessage('error', 'Failed to delete feed item');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveMedicine = async () => {
+    if (!medModal.data.medicine_name || !medModal.data.category) return showMessage('error', 'Name and category required');
+    try {
+      setSaving(true);
+      if (medModal.mode === 'add') {
+        await medicineAPI.addMedicine(medModal.data);
+        showMessage('success', 'Medicine added');
+      } else {
+        await medicineAPI.updateMedicine(medModal.data.id, medModal.data);
+        showMessage('success', 'Medicine updated');
+      }
+      setMedModal({ show: false, mode: 'add', data: {} });
+      loadMasterData();
+    } catch (err) {
+      showMessage('error', 'Failed to save medicine');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteMedicine = async (id) => {
+    if (!window.confirm("Delete this Medicine? Historical logs will be preserved.")) return;
+    try {
+      setSaving(true);
+      await medicineAPI.deleteMedicine(id);
+      loadMasterData();
+      showMessage('success', 'Medicine deleted');
+    } catch (err) {
+      showMessage('error', 'Failed to delete medicine');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const addCowFormOption = (field, label) => {
+    setCowTypeModal({ show: true, field, label, val: '' });
+  };
+
+  const handleSaveCowOption = () => {
+    const val = cowTypeModal.val.trim();
+    if (val && !cowFormSettings[cowTypeModal.field].includes(val)) {
+      setCowFormSettings(prev => ({ ...prev, [cowTypeModal.field]: [...prev[cowTypeModal.field], val] }));
+    }
+    setCowTypeModal({ show: false, field: '', label: '', val: '' });
+  };
+
+  const removeCowFormOption = (field, val) => {
+    if (val === 'Other') return showMessage('error', "'Other' is a protected required field.");
+    setCowFormSettings(prev => ({ ...prev, [field]: prev[field].filter(v => v !== val) }));
   };
 
   const renderActionButtons = (saveHandler) => {
@@ -237,6 +295,9 @@ function Settings() {
               <h4>System Master</h4>
               <button className={`tab-btn ${activeTab === 'farm' ? 'active' : ''}`} onClick={() => handleTabChange('farm')}>
                 <Factory size={16} /> Farm Profile
+              </button>
+              <button className={`tab-btn ${activeTab === 'cow-master' ? 'active' : ''}`} onClick={() => handleTabChange('cow-master')}>
+                <CogIcon size={16} /> Cow Master
               </button>
               <button className={`tab-btn ${activeTab === 'feed-master' ? 'active' : ''}`} onClick={() => handleTabChange('feed-master')}>
                 <Wheat size={16} /> Feed Items
@@ -302,6 +363,9 @@ function Settings() {
                 <>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                     <h2>Feed Item Master</h2>
+                    <button className="add-master-btn" onClick={() => setFeedModal({ show: true, mode: 'add', data: { item_name: '', category_id: '', default_cost_per_unit: '', default_source: 'Purchased' } })}>
+                      <Plus size={14} /> Add New
+                    </button>
                   </div>
                   <p className="panel-desc">Configure standard costs and sources for feed logs.</p>
                   <div className="master-table-wrapper">
@@ -323,9 +387,14 @@ function Settings() {
                             <td>₹{item.default_cost_per_unit}</td>
                             <td>{item.default_source}</td>
                             <td>
-                              <button className="icon-btn" onClick={() => handleUpdateFeedItem(item)} title="Edit Cost">
-                                <Edit2 size={14} />
-                              </button>
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <button className="icon-btn" onClick={() => setFeedModal({ show: true, mode: 'edit', data: item })} title="Edit Item">
+                                  <Edit2 size={14} />
+                                </button>
+                                <button className="icon-btn" style={{ color: '#ef4444' }} onClick={() => handleDeleteFeedItem(item.id)} title="Delete Item">
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -340,7 +409,7 @@ function Settings() {
                 <>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                     <h2>Medicine Master</h2>
-                    <button className="add-master-btn" onClick={handleAddMedicine}>
+                    <button className="add-master-btn" onClick={() => setMedModal({ show: true, mode: 'add', data: { medicine_name: '', category: 'Medicine', description: '' } })}>
                       <Plus size={14} /> Add New
                     </button>
                   </div>
@@ -352,6 +421,7 @@ function Settings() {
                           <th>Medicine Name</th>
                           <th>Category</th>
                           <th>Description</th>
+                          <th>Action</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -360,11 +430,73 @@ function Settings() {
                             <td>{med.medicine_name}</td>
                             <td className="med-cat-cell">{med.category}</td>
                             <td className="small-text">{med.description || '-'}</td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <button className="icon-btn" onClick={() => setMedModal({ show: true, mode: 'edit', data: med })} title="Edit Medicine">
+                                  <Edit2 size={14} />
+                                </button>
+                                <button className="icon-btn" style={{ color: '#ef4444' }} onClick={() => handleDeleteMedicine(med.id)} title="Delete Medicine">
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
+                </>
+              )}
+
+              {/* Cow Master */}
+              {activeTab === 'cow-master' && (
+                <>
+                  <h2>Cow Master Configuration</h2>
+                  <p className="panel-desc">Manage standard dropdown options globally.</p>
+                  
+                  <div className="settings-form-group">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <label style={{ margin: 0 }}>Available Breeds</label>
+                      <button type="button" className="add-master-btn" disabled={!isEditing} style={{ opacity: isEditing ? 1 : 0.5, cursor: isEditing ? 'pointer' : 'not-allowed' }} onClick={() => addCowFormOption('breeds', 'Breed')}>
+                        <Plus size={14} /> Add Breed
+                      </button>
+                    </div>
+                    <div className="cow-options-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+                      {cowFormSettings.breeds.map(breed => (
+                        <div key={breed} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', padding: '4px 10px', borderRadius: '16px', fontSize: '13px' }}>
+                          <span>{breed}</span>
+                          {isEditing && breed !== 'Other' && (
+                            <button type="button" onClick={() => removeCowFormOption('breeds', breed)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                              <XCircle size={14} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="settings-form-group">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <label style={{ margin: 0 }}>Available Cow Types</label>
+                      <button type="button" className="add-master-btn" disabled={!isEditing} style={{ opacity: isEditing ? 1 : 0.5, cursor: isEditing ? 'pointer' : 'not-allowed' }} onClick={() => addCowFormOption('cow_types', 'Cow Type')}>
+                        <Plus size={14} /> Add Type
+                      </button>
+                    </div>
+                    <div className="cow-options-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+                      {cowFormSettings.cow_types.map(type => (
+                        <div key={type} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', padding: '4px 10px', borderRadius: '16px', fontSize: '13px' }}>
+                          <span>{type}</span>
+                          {isEditing && type !== 'Other' && (
+                            <button type="button" onClick={() => removeCowFormOption('cow_types', type)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                              <XCircle size={14} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {renderActionButtons(handleAdminSave)}
                 </>
               )}
 
@@ -437,6 +569,86 @@ function Settings() {
           )}
         </div>
       </div>
+
+      {feedModal.show && (
+        <div className="modal-overlay">
+          <div className="settings-modal" style={{ background: 'white', padding: '24px', borderRadius: '8px', width: '400px', maxWidth: '90%' }}>
+            <h3 style={{ marginTop: 0 }}>{feedModal.mode === 'add' ? 'Add Feed Item' : 'Edit Feed Item'}</h3>
+            <div className="settings-form-group">
+              <label>Item Name</label>
+              <input type="text" value={feedModal.data.item_name} onChange={e => setFeedModal(p => ({...p, data: {...p.data, item_name: e.target.value}}))} />
+            </div>
+            <div className="settings-form-group">
+              <label>Category</label>
+              <select value={feedModal.data.category_id} onChange={e => setFeedModal(p => ({...p, data: {...p.data, category_id: e.target.value}}))}>
+                <option value="">Select Category</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.category_name}</option>)}
+              </select>
+            </div>
+            <div className="settings-form-group">
+              <label>Cost per unit (₹)</label>
+              <input type="number" step="0.5" value={feedModal.data.default_cost_per_unit} onChange={e => setFeedModal(p => ({...p, data: {...p.data, default_cost_per_unit: e.target.value}}))} />
+            </div>
+            <div className="settings-form-group">
+              <label>Default Source</label>
+              <select value={feedModal.data.default_source} onChange={e => setFeedModal(p => ({...p, data: {...p.data, default_source: e.target.value}}))}>
+                <option value="Purchased">Purchased</option>
+                <option value="Farm Produced">Farm Produced</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <button className="settings-cancel-btn" style={{ flex: 1 }} onClick={() => setFeedModal({ show: false, mode: 'add', data: {} })}>Cancel</button>
+              <button className="settings-save-btn" style={{ flex: 1 }} onClick={handleSaveFeedItem}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {medModal.show && (
+        <div className="modal-overlay">
+          <div className="settings-modal" style={{ background: 'white', padding: '24px', borderRadius: '8px', width: '400px', maxWidth: '90%' }}>
+            <h3 style={{ marginTop: 0 }}>{medModal.mode === 'add' ? 'Add Medicine' : 'Edit Medicine'}</h3>
+            <div className="settings-form-group">
+              <label>Medicine Name</label>
+              <input type="text" value={medModal.data.medicine_name} onChange={e => setMedModal(p => ({...p, data: {...p.data, medicine_name: e.target.value}}))} />
+            </div>
+            <div className="settings-form-group">
+              <label>Category</label>
+              <select value={medModal.data.category} onChange={e => setMedModal(p => ({...p, data: {...p.data, category: e.target.value}}))}>
+                <option value="Medicine">Medicine</option>
+                <option value="Supplement">Supplement</option>
+                <option value="Multivitamin">Multivitamin</option>
+                <option value="Treatment">Treatment</option>
+              </select>
+            </div>
+            <div className="settings-form-group">
+              <label>Description (Optional)</label>
+              <textarea value={medModal.data.description || ''} onChange={e => setMedModal(p => ({...p, data: {...p.data, description: e.target.value}}))} rows="3" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #e2e8f0' }}></textarea>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <button className="settings-cancel-btn" style={{ flex: 1 }} onClick={() => setMedModal({ show: false, mode: 'add', data: {} })}>Cancel</button>
+              <button className="settings-save-btn" style={{ flex: 1 }} onClick={handleSaveMedicine}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cowTypeModal.show && (
+        <div className="modal-overlay">
+          <div className="settings-modal" style={{ background: 'white', padding: '24px', borderRadius: '8px', width: '350px', maxWidth: '90%' }}>
+            <h3 style={{ marginTop: 0 }}>Add {cowTypeModal.label}</h3>
+            <div className="settings-form-group">
+              <label>Name</label>
+              <input type="text" autoFocus value={cowTypeModal.val} onChange={e => setCowTypeModal(p => ({...p, val: e.target.value}))} />
+            </div>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <button className="settings-cancel-btn" style={{ flex: 1 }} onClick={() => setCowTypeModal({ show: false, field: '', label: '', val: '' })}>Cancel</button>
+              <button className="settings-save-btn" style={{ flex: 1 }} onClick={handleSaveCowOption}>Add</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

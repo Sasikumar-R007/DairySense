@@ -164,6 +164,12 @@ export const feedAPI = {
     });
   },
 
+  deleteItem: async (id) => {
+    return apiRequest(`/feed/items/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
   createFeedLog: async (date, items) => {
     return apiRequest('/feed/log', {
       method: 'POST',
@@ -213,6 +219,31 @@ export const feedAPI = {
   deleteFeedLog: async (id) => {
     return apiRequest(`/feed/log/${id}`, {
       method: 'DELETE',
+    });
+  },
+
+  getCowsByWeight: async (min, max) => {
+    let query = '';
+    if (min !== undefined) query += `min=${min}`;
+    if (max !== undefined) {
+      if (query) query += '&';
+      query += `max=${max}`;
+    }
+    const response = await apiRequest(`/feed/cows-by-weight${query ? '?' + query : ''}`);
+    return response.data;
+  },
+
+  logBulkFeed: async (payload) => {
+    return apiRequest('/feed/bulk-log', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  logCowFeed: async (payload) => {
+    return apiRequest('/feed/cow-log', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
   },
 };
@@ -284,6 +315,12 @@ export const medicineAPI = {
     return apiRequest(`/medicine/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
+    });
+  },
+
+  deleteMedicine: async (id) => {
+    return apiRequest(`/medicine/${id}`, {
+      method: 'DELETE',
     });
   },
 

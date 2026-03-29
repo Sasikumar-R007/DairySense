@@ -45,6 +45,7 @@ export async function getMedicines() {
   const result = await pool.query(
     `SELECT id, medicine_name, category, description, created_at
      FROM medicine_master
+     WHERE is_active = true
      ORDER BY category ASC, medicine_name ASC`
   );
 
@@ -77,15 +78,26 @@ export async function updateMedicine(id, { medicine_name, category, description 
          category = COALESCE($2, category),
          description = COALESCE($3, description),
          updated_at = CURRENT_TIMESTAMP
-     WHERE id = $4
+     WHERE id = $4 AND is_active = true
      RETURNING *`,
     [medicine_name ? medicine_name.trim() : null, normalizedCategory, description, id]
   );
 
   if (result.rows.length === 0) {
-    throw new Error('Medicine not found');
+    throw new Error('Medicine not found or deleted');
   }
 
+  return result.rows[0];
+}
+
+export async function deleteMedicine(id) {
+  const result = await pool.query(
+    `UPDATE medicine_master SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *`,
+    [id]
+  );
+  if (result.rows.length === 0) {
+    throw new Error('Medicine not found');
+  }
   return result.rows[0];
 }
 

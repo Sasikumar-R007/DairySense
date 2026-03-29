@@ -42,7 +42,11 @@ function MilkYieldLog() {
     try {
       setLoading(true);
       const cows = await cowsAPI.getAllCows();
-      const filteredCows = cows.filter((cow) => cow.is_active !== false && cow.status !== 'inactive');
+      const filteredCows = cows.filter((cow) => 
+        cow.is_active !== false && 
+        cow.status !== 'inactive' && 
+        cow.cow_type === 'milking'
+      );
       setActiveCows(filteredCows);
 
       const initialEntries = {};
@@ -140,15 +144,19 @@ function MilkYieldLog() {
     for (const cow of activeCows) {
       const entry = entriesByCow[cow.cow_id] || { morning: '', evening: '' };
 
-      if (entry.morning !== '') {
+      // Validation: If any session has an entry, both must be filled
+      if (entry.morning !== '' || entry.evening !== '') {
+        if (entry.morning === '' || entry.evening === '') {
+          showMessage('error', `Both Morning and Evening entries are required for cow ${cow.cow_id}`);
+          return;
+        }
+
         payloadEntries.push({
           cow_id: cow.cow_id,
           session: 'Morning',
           milk_qty_kg: Number(entry.morning)
         });
-      }
 
-      if (entry.evening !== '') {
         payloadEntries.push({
           cow_id: cow.cow_id,
           session: 'Evening',
@@ -158,7 +166,7 @@ function MilkYieldLog() {
     }
 
     if (payloadEntries.length === 0) {
-      showMessage('error', 'Please enter at least one milk value before saving');
+      showMessage('error', 'Please enter milk values before saving');
       return;
     }
 
@@ -179,13 +187,40 @@ function MilkYieldLog() {
     <div className="milk-yield-log-page">
       <div className="milk-yield-log-card">
         <div className="milk-yield-log-header">
-          <button type="button" className="back-button" onClick={() => navigate(-1)}>
-            <ArrowLeft size={20} />
-            <span>Back</span>
-          </button>
-          <div>
-            <h1>Milk Yield Log</h1>
-            <p>Single-page morning and evening milk entry for active cows.</p>
+          <div className="header-left">
+            <button type="button" className="back-button" onClick={() => navigate(-1)}>
+              <ArrowLeft size={20} />
+            </button>
+            <div className="title-section">
+              <h1>Milk Yield Log</h1>
+              <p>Entry for milking cows</p>
+            </div>
+          </div>
+          
+          <div className="header-right">
+            <div className="date-controls">
+              <button type="button" onClick={() => changeDate(-1)} className="nav-btn">
+                <ChevronLeft size={18} />
+              </button>
+              <input
+                id="milk-log-date"
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="date-input"
+              />
+              <button type="button" onClick={() => changeDate(1)} className="nav-btn">
+                <ChevronRight size={18} />
+              </button>
+            </div>
+            <button 
+              type="button" 
+              className="save-log-btn" 
+              onClick={handleSave} 
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : 'Save Log'}
+            </button>
           </div>
         </div>
 
@@ -195,89 +230,94 @@ function MilkYieldLog() {
           </div>
         )}
 
-        <div className="milk-yield-toolbar">
-          <div className="milk-yield-field" style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
-              <div>
-                <label htmlFor="milk-log-date" style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '600', color: '#475569' }}>Select Date</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <button type="button" onClick={() => changeDate(-1)} style={{ padding: '8px', cursor: 'pointer', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', color: '#475569' }}>
-                    <ChevronLeft size={16} />
-                  </button>
-                  <input
-                    id="milk-log-date"
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    style={{ padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px' }}
-                  />
-                  <button type="button" onClick={() => changeDate(1)} style={{ padding: '8px', cursor: 'pointer', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', color: '#475569' }}>
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
-            <button 
-              type="button" 
-              className="save-milk-log-button" 
-              onClick={handleSave} 
-              disabled={saving}
-              style={{
-                background: '#2563eb', color: 'white', border: 'none', padding: '10px 20px', 
-                borderRadius: '8px', fontWeight: '600', cursor: saving ? 'not-allowed' : 'pointer',
-                opacity: saving ? 0.7 : 1, boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)'
-              }}
-            >
-              {saving ? 'Saving...' : 'Save Milk Log'}
-            </button>
-          </div>
-        </div>
 
         {loading ? (
           <div className="loading-state">Loading active cows...</div>
         ) : (
           <>
-            <div className="milk-yield-table-wrapper">
-              <table className="milk-yield-table">
-                <thead>
-                  <tr>
-                    <th>Cow ID</th>
-                    <th>Morning (kg)</th>
-                    <th>Evening (kg)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activeCows.map((cow) => {
-                    const entry = entriesByCow[cow.cow_id] || { morning: '', evening: '' };
-                    return (
-                      <tr key={cow.cow_id}>
-                        <td className="cow-id-cell">
-                          <div className="cow-id-main">{cow.cow_id}</div>
-                          {cow.cow_tag && <div className="cow-id-sub">Tag {cow.cow_tag}</div>}
-                        </td>
-                        <td>
+            <div className="milk-entry-container">
+              {/* Desktop Table */}
+              <div className="desktop-table-view">
+                <table className="milk-yield-table">
+                  <thead>
+                    <tr>
+                      <th>Cow Details</th>
+                      <th>Morning (kg)</th>
+                      <th>Evening (kg)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeCows.map((cow) => {
+                      const entry = entriesByCow[cow.cow_id] || { morning: '', evening: '' };
+                      return (
+                        <tr key={cow.cow_id}>
+                          <td className="cow-id-cell">
+                            <div className="cow-tag-id">COW{String(cow.cow_tag || 0).padStart(3, '0')}</div>
+                            <div className="cow-system-id">{cow.cow_id}</div>
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={entry.morning}
+                              onChange={(e) => updateEntry(cow.cow_id, 'morning', e.target.value)}
+                              placeholder="Morning yield"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={entry.evening}
+                              onChange={(e) => updateEntry(cow.cow_id, 'evening', e.target.value)}
+                              placeholder="Evening yield"
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="mobile-cards-view">
+                {activeCows.map((cow) => {
+                  const entry = entriesByCow[cow.cow_id] || { morning: '', evening: '' };
+                  return (
+                    <div key={cow.cow_id} className="milk-entry-card">
+                      <div className="card-cow-info">
+                        <span className="card-tag">COW{String(cow.cow_tag || 0).padStart(3, '0')}</span>
+                        <span className="card-id">{cow.cow_id}</span>
+                      </div>
+                      <div className="card-inputs">
+                        <div className="input-group">
+                          <label>Morning</label>
                           <input
                             type="number"
                             step="0.01"
-                            min="0"
                             value={entry.morning}
                             onChange={(e) => updateEntry(cow.cow_id, 'morning', e.target.value)}
-                            placeholder="Morning"
+                            placeholder="kg"
                           />
-                        </td>
-                        <td>
+                        </div>
+                        <div className="input-group">
+                          <label>Evening</label>
                           <input
                             type="number"
                             step="0.01"
-                            min="0"
                             value={entry.evening}
                             onChange={(e) => updateEntry(cow.cow_id, 'evening', e.target.value)}
-                            placeholder="Evening"
+                            placeholder="kg"
                           />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="saved-milk-section">

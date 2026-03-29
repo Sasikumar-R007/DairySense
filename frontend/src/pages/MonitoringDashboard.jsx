@@ -6,7 +6,6 @@ import {
   BarChart3,
   Calendar,
   Database,
-  History,
   Milk,
   Settings,
   ShieldAlert,
@@ -27,6 +26,7 @@ function MonitoringDashboard() {
   const [viewScope, setViewScope] = useState('daily');
   const [error, setError] = useState('');
   const [ratioHistory, setRatioHistory] = useState([]);
+  const [performanceHistory, setPerformanceHistory] = useState([]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -37,13 +37,15 @@ function MonitoringDashboard() {
       setLoading(true);
       setError('');
       
-      const [result, ratioHistoryRes] = await Promise.all([
+      const [result, ratioHistoryRes, performanceRes] = await Promise.all([
         monitoringAPI.getDashboard(viewScope === 'daily' ? selectedDate : null, viewScope),
-        monitoringAPI.getRatioHistory(30)
+        monitoringAPI.getRatioHistory(30),
+        monitoringAPI.getPerformanceHistory(30)
       ]);
       
       setData(result);
       setRatioHistory(ratioHistoryRes.data || []);
+      setPerformanceHistory(performanceRes.data || []);
     } catch (err) {
       console.error('Error fetching dashboard:', err);
       if (
@@ -120,24 +122,28 @@ function MonitoringDashboard() {
 
   const actions = [
     {
-      label: 'Cow Performance',
-      icon: Activity,
-      onClick: () => navigate('/monitoring/cows'),
+      label: 'Add New Cow',
+      icon: Users,
+      onClick: () => navigate('/cows/add'),
+      color: '#2563eb'
     },
     {
-      label: 'Daily Report',
-      icon: Calendar,
+      label: 'Milk Entry',
+      icon: Milk,
+      onClick: () => navigate('/milk-log'),
+      color: '#10b981'
+    },
+    {
+      label: 'Feed Entry',
+      icon: Utensils,
+      onClick: () => navigate('/feed-log'),
+      color: '#f59e0b'
+    },
+    {
+      label: 'Overall Reports',
+      icon: BarChart3,
       onClick: () => navigate('/monitoring/summary'),
-    },
-    {
-      label: 'History',
-      icon: History,
-      onClick: () => navigate('/monitoring/history'),
-    },
-    {
-      label: 'Record Management',
-      icon: Database,
-      onClick: () => navigate('/dashboard'),
+      color: '#6366f1'
     },
   ];
 
@@ -152,7 +158,7 @@ function MonitoringDashboard() {
             <ArrowLeft size={20} />
             <span>Back</span>
           </button>
-          <h1>Monitoring Dashboard</h1>
+          <h1>Command Center</h1>
         </div>
 
         <div className="header-right">
@@ -263,31 +269,38 @@ function MonitoringDashboard() {
               <BarChart3 size={18} />
               <h3>Yield-to-Feed Ratio</h3>
             </div>
-            <p className="monitoring-stat-value">{Number(yieldFeedRatio).toFixed(2)}</p>
-            <span className="monitoring-stat-unit">L/kg</span>
+            <p className="monitoring-stat-value">{Number(yieldFeedRatio || 0).toFixed(2)} : 1</p>
+            <span className="monitoring-stat-unit">L yield per kg feed</span>
           </div>
         </div>
 
         <div className="monitoring-panels">
           <div className={`status-card-panel ${lowYieldCount > 0 ? 'alert' : ''}`}>
             <div className="status-card-icon">
-              <ShieldAlert size={22} />
+              <ShieldAlert size={28} />
             </div>
             <div className="status-card-content">
-              <h3>Alert Indication</h3>
+              <h3>Health & Yield Alerts</h3>
               <p className="status-card-value">{lowYieldCount}</p>
               <span className="status-card-label">
-                {lowYieldCount === 1 ? 'cow needs attention' : 'cows need attention'}
+                {lowYieldCount === 0 ? 'All cows performing normally' : (lowYieldCount === 1 ? 'cow needs immediate attention' : 'cows showing yield drop')}
               </span>
             </div>
+            {lowYieldCount > 0 && (
+              <button className="view-alerts-btn" onClick={() => navigate('/monitoring/cows')}>
+                View List
+              </button>
+            )}
           </div>
 
           <div className="action-panel">
             <h3>Quick Actions</h3>
             <div className="action-grid">
-              {actions.map(({ label, icon: Icon, onClick }) => (
-                <button key={label} className="action-card" onClick={onClick}>
-                  <Icon size={18} />
+              {actions.map(({ label, icon: Icon, onClick, color }) => (
+                <button key={label} className="action-card" onClick={onClick} style={{ borderColor: color }}>
+                  <div className="action-icon-wrapper" style={{ backgroundColor: `${color}15`, color: color }}>
+                    <Icon size={20} />
+                  </div>
                   <span>{label}</span>
                 </button>
               ))}
@@ -295,23 +308,50 @@ function MonitoringDashboard() {
           </div>
         </div>
         
-        {ratioHistory.length > 0 && (
-          <div className="ratio-history-panel" style={{ marginTop: '24px', backgroundColor: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-            <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
-              <BarChart3 size={20} /> Yield-to-Feed Ratio History (30 Days)
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={ratioHistory}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="ratio" stroke="#f59e0b" strokeWidth={3} name="Yield/Feed Ratio" dot={false} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+        <div className="dashboard-charts-row">
+          {performanceHistory.length > 0 && (
+            <div className="chart-panel main-performance">
+              <div className="chart-header">
+                <Activity size={20} />
+                <h3>Farm Performance (Feed vs Milk)</h3>
+              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={performanceHistory}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  />
+                  <Legend iconType="circle" />
+                  <Line yAxisId="left" type="monotone" dataKey="milk" stroke="#10b981" strokeWidth={4} name="Total Milk (L)" dot={{ r: 4, fill: '#10b981' }} activeDot={{ r: 6 }} />
+                  <Line yAxisId="right" type="monotone" dataKey="feed" stroke="#3b82f6" strokeWidth={4} name="Total Feed (kg)" dot={{ r: 4, fill: '#3b82f6' }} activeDot={{ r: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {ratioHistory.length > 0 && (
+            <div className="chart-panel ratio-trend">
+              <div className="chart-header">
+                <BarChart3 size={20} />
+                <h3>Efficiency Trend (L/kg)</h3>
+              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={ratioHistory}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  />
+                  <Line type="monotone" dataKey="ratio" stroke="#f59e0b" strokeWidth={3} name="Feed Efficiency" dot={false} activeDot={{ r: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import {
   getMedicines,
   addMedicine,
   updateMedicine,
+  deleteMedicine,
   logCowMedicine,
   getCowMedicineHistory
 } from '../services/medicineService.js';
@@ -47,6 +48,18 @@ router.put('/:id', async (req, res) => {
     res.json({ message: 'Medicine updated successfully', data: medicine });
   } catch (error) {
     console.error('Error updating medicine:', error);
+    const statusCode = error.message.includes('not found') ? 404 : 500;
+    res.status(statusCode).json({ error: error.message });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const medicine = await deleteMedicine(id);
+    res.json({ message: 'Medicine soft-deleted successfully', data: medicine });
+  } catch (error) {
+    console.error('Error deleting medicine:', error);
     const statusCode = error.message.includes('not found') ? 404 : 500;
     res.status(statusCode).json({ error: error.message });
   }

@@ -29,6 +29,7 @@ function CowDetails() {
     next_vaccination_date: '',
     number_of_calves: 0,
     is_active: true,
+    custom_cow_type: '',
     notes: ''
   });
 
@@ -56,7 +57,6 @@ function CowDetails() {
       setCow(cowData);
       setEditForm({
         name: cowData.name || '',
-        cow_type: cowData.cow_type || 'normal',
         breed: cowData.breed || '',
         date_of_birth: cowData.date_of_birth || '',
         purchase_date: cowData.purchase_date || '',
@@ -64,6 +64,8 @@ function CowDetails() {
         next_vaccination_date: cowData.next_vaccination_date || '',
         number_of_calves: cowData.number_of_calves || 0,
         is_active: cowData.is_active !== false,
+        custom_cow_type: (cowData.cow_type && !['normal', 'milking', 'pregnant', 'dry', 'calf'].includes(cowData.cow_type)) ? cowData.cow_type : '',
+        cow_type: (cowData.cow_type && !['normal', 'milking', 'pregnant', 'dry', 'calf'].includes(cowData.cow_type)) ? 'Other' : (cowData.cow_type || 'normal'),
         notes: cowData.notes || ''
       });
 
@@ -107,7 +109,6 @@ function CowDetails() {
     if (cow) {
       setEditForm({
         name: cow.name || '',
-        cow_type: cow.cow_type || 'normal',
         breed: cow.breed || '',
         date_of_birth: cow.date_of_birth || '',
         purchase_date: cow.purchase_date || '',
@@ -115,6 +116,8 @@ function CowDetails() {
         next_vaccination_date: cow.next_vaccination_date || '',
         number_of_calves: cow.number_of_calves || 0,
         is_active: cow.is_active !== false,
+        custom_cow_type: (cow.cow_type && !['normal', 'milking', 'pregnant', 'dry', 'calf'].includes(cow.cow_type)) ? cow.cow_type : '',
+        cow_type: (cow.cow_type && !['normal', 'milking', 'pregnant', 'dry', 'calf'].includes(cow.cow_type)) ? 'Other' : (cow.cow_type || 'normal'),
         notes: cow.notes || ''
       });
     }
@@ -122,7 +125,15 @@ function CowDetails() {
 
   const handleSave = async () => {
     try {
-      const updatedCow = await cowsAPI.updateCow(cowId, editForm);
+      const finalBreed = editForm.breed === 'Other' ? editForm.custom_breed : editForm.breed;
+      const finalCowType = editForm.cow_type === 'Other' ? editForm.custom_cow_type : editForm.cow_type;
+      
+      const { breed, cow_type, ...otherFields } = editForm;
+      const updatedCow = await cowsAPI.updateCow(cowId, {
+        ...otherFields,
+        breed: finalBreed,
+        cow_type: finalCowType
+      });
       setCow(updatedCow);
       setEditing(false);
       showMessage('success', 'Cow details updated successfully');
@@ -180,21 +191,27 @@ function CowDetails() {
               <span>Back</span>
             </button>
             <h2>
-              Cow Details: {cow.cow_id}
+              <span className="id-sublabel">Cow Identifier:</span> {cow.cow_id}
               <span className={`status-badge ${cow.is_active ? 'active' : 'inactive'}`}>
                 {cow.is_active ? 'Active' : 'Inactive'}
               </span>
             </h2>
           </div>
           {!editing && (
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={handleDelete} className="delete-header-btn">
-                <Trash2 size={18} />
-                <span>Delete</span>
+            <div className="header-actions">
+              <button 
+                onClick={handleEdit} 
+                className="action-icon-btn edit" 
+                data-label="Edit Cow"
+              >
+                <Edit size={20} />
               </button>
-              <button onClick={handleEdit} className="edit-button">
-                <Edit size={18} />
-                <span>Edit Details</span>
+              <button 
+                onClick={handleDelete} 
+                className="action-icon-btn delete" 
+                data-label="Delete Cow"
+              >
+                <Trash2 size={20} />
               </button>
             </div>
           )}
@@ -254,28 +271,75 @@ function CowDetails() {
               <div className="form-row">
                 <div className="form-group">
                   <label>Cow Type</label>
-                  <select
-                    name="cow_type"
-                    value={editForm.cow_type}
-                    onChange={handleInputChange}
-                  >
-                    <option value="normal">Normal</option>
-                    <option value="pregnant">Pregnant</option>
-                    <option value="dry">Dry</option>
-                  </select>
+                  {editForm.cow_type === 'Other' ? (
+                    <div className="input-with-cancel">
+                      <input
+                        type="text"
+                        name="custom_cow_type"
+                        value={editForm.custom_cow_type}
+                        onChange={handleInputChange}
+                        placeholder="Enter custom type"
+                        autoFocus
+                      />
+                      <button 
+                        type="button" 
+                        className="cancel-inline"
+                        onClick={() => {
+                        const { cow_type, ...otherFields } = editForm;
+                        setEditForm({ ...otherFields, cow_type: 'normal', custom_cow_type: '' });
+                      }}
+                      >✕</button>
+                    </div>
+                  ) : (
+                    <select
+                      name="cow_type"
+                      value={editForm.cow_type}
+                      onChange={handleInputChange}
+                    >
+                      <option value="normal">Normal</option>
+                      <option value="milking">Milking Stage</option>
+                      <option value="pregnant">Pregnant</option>
+                      <option value="dry">Dry</option>
+                      <option value="calf">Calf</option>
+                      <option value="Other">Other (Specify)</option>
+                    </select>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>Breed</label>
-                  <input
-                    type="text"
-                    name="breed"
-                    value={editForm.breed}
-                    onChange={handleInputChange}
-                  />
+                  {editForm.breed === 'Other' ? (
+                    <div className="input-with-cancel">
+                      <input
+                        type="text"
+                        name="custom_breed"
+                        value={editForm.custom_breed || ''}
+                        onChange={handleInputChange}
+                        placeholder="Enter custom breed"
+                        autoFocus
+                      />
+                      <button 
+                        type="button" 
+                        className="cancel-inline"
+                        onClick={() => setEditForm(prev => ({ ...prev, breed: '', custom_breed: '' }))}
+                      >✕</button>
+                    </div>
+                  ) : (
+                    <select
+                      name="breed"
+                      value={editForm.breed}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Breed</option>
+                      <option value="HF">HF</option>
+                      <option value="Jersey">Jersey</option>
+                      <option value="Gir">Gir</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  )}
                 </div>
               </div>
               
-              <div className="form-row">
+              <div className="form-row three-cols">
                 <div className="form-group">
                   <label>Number of Calves</label>
                   <input
@@ -295,9 +359,6 @@ function CowDetails() {
                     onChange={handleInputChange}
                   />
                 </div>
-              </div>
-
-              <div className="form-row">
                 <div className="form-group">
                   <label>Purchase Date</label>
                   <input
@@ -307,6 +368,9 @@ function CowDetails() {
                     onChange={handleInputChange}
                   />
                 </div>
+              </div>
+
+              <div className="form-row three-cols">
                 <div className="form-group">
                   <label>Last Vaccination Date</label>
                   <input
@@ -316,9 +380,6 @@ function CowDetails() {
                     onChange={handleInputChange}
                   />
                 </div>
-              </div>
-
-              <div className="form-row">
                 <div className="form-group">
                   <label>Next Vaccination Date</label>
                   <input
@@ -469,21 +530,34 @@ function CowDetails() {
         )}
 
 
-        {/* Milk Yield Graph */}
-        {milkHistory.length > 0 && (
+        {/* Feed vs Yield Chart */}
+        {milkHistory.length > 0 && feedHistory.length > 0 && (
           <section className="details-section">
-            <h3>Milk Yield History</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={milkHistory}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="morning" stroke="#4caf50" strokeWidth={2} name="Morning (L)" />
-                <Line type="monotone" dataKey="evening" stroke="#2196f3" strokeWidth={2} name="Evening (L)" />
-              </LineChart>
-            </ResponsiveContainer>
+            <h3>Feed vs Milk Yield Comparison</h3>
+            <div className="chart-container">
+              <ResponsiveContainer width="100%" height={350}>
+                <LineChart data={
+                  // Merge data for comparison
+                  feedHistory.map(f => {
+                    const m = milkHistory.find(mlk => mlk.date === f.date);
+                    return {
+                      date: f.date,
+                      feed: f.feed,
+                      yield: m ? m.total : 0
+                    };
+                  })
+                }>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis yAxisId="left" label={{ value: 'Feed (kg)', angle: -90, position: 'insideLeft' }} />
+                  <YAxis yAxisId="right" orientation="right" label={{ value: 'Yield (L)', angle: 90, position: 'insideRight' }} />
+                  <Tooltip />
+                  <Legend />
+                  <Line yAxisId="left" type="monotone" dataKey="feed" stroke="#2563eb" strokeWidth={3} name="Feed intake (kg)" dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  <Line yAxisId="right" type="monotone" dataKey="yield" stroke="#10b981" strokeWidth={3} name="Milk yield (L)" dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </section>
         )}
 

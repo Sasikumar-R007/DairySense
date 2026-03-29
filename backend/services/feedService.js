@@ -44,6 +44,7 @@ export async function getFeedItems() {
         i.created_at
      FROM feed_item_master i
      JOIN feed_category_master c ON c.id = i.category_id
+     WHERE i.is_active = true
      ORDER BY c.category_name ASC, i.item_name ASC`
   );
 
@@ -65,22 +66,34 @@ export async function createFeedItem({ category_id, item_name, default_unit, def
   return result.rows[0];
 }
 
-export async function updateFeedItem(id, { item_name, default_cost_per_unit, default_source }) {
+export async function updateFeedItem(id, { category_id, item_name, default_cost_per_unit, default_source }) {
   const result = await pool.query(
     `UPDATE feed_item_master
-     SET item_name = COALESCE($1, item_name),
-         default_cost_per_unit = COALESCE($2, default_cost_per_unit),
-         default_source = COALESCE($3, default_source),
+     SET category_id = COALESCE($1, category_id),
+         item_name = COALESCE($2, item_name),
+         default_cost_per_unit = COALESCE($3, default_cost_per_unit),
+         default_source = COALESCE($4, default_source),
          updated_at = CURRENT_TIMESTAMP
-     WHERE id = $4
+     WHERE id = $5 AND is_active = true
      RETURNING *`,
-    [item_name ? item_name.trim() : null, default_cost_per_unit, default_source, id]
+    [category_id, item_name ? item_name.trim() : null, default_cost_per_unit, default_source, id]
   );
 
   if (result.rows.length === 0) {
-    throw new Error('Feed item not found');
+    throw new Error('Feed item not found or deleted');
   }
 
+  return result.rows[0];
+}
+
+export async function deleteFeedItem(id) {
+  const result = await pool.query(
+    `UPDATE feed_item_master SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *`,
+    [id]
+  );
+  if (result.rows.length === 0) {
+    throw new Error('Feed item not found');
+  }
   return result.rows[0];
 }
 
@@ -188,19 +201,13 @@ export async function getAllFeedLogs(startDate, endDate) {
     SELECT
         l.id,
         l.date,
-        l.feed_item_id,
-        c.id as category_id,
-        c.category_name,
-        i.item_name,
-        i.default_unit,
+        l.cow_id,
+        l.session,
+        l.feed_category as category_name,
+        l.feed_type as item_name,
         l.quantity_kg,
-        l.cost_per_unit,
-        l.total_amount,
-        l.input_source,
         l.created_at
-     FROM feed_log l
-     JOIN feed_item_master i ON i.id = l.feed_item_id
-     JOIN feed_category_master c ON c.id = i.category_id
+     FROM cow_feed_log l
   `;
 
   const queryParams = [];
@@ -220,7 +227,7 @@ export async function getAllFeedLogs(startDate, endDate) {
     queryStr += ` WHERE ` + conditions.join(' AND ');
   }
 
-  queryStr += ` ORDER BY l.date DESC, c.category_name ASC, i.item_name ASC, l.id DESC`;
+  queryStr += ` ORDER BY l.date DESC, l.created_at DESC`;
 
   const result = await pool.query(queryStr, queryParams);
   return result.rows;

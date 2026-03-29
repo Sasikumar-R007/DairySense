@@ -101,7 +101,7 @@ function Layout() {
               {canManageSettings && (
                 <button className={`nav-item ${isActive('/add-cow')}`} onClick={() => navigate('/add-cow')}>
                   <Plus size={18} />
-                  <span>Register Animal</span>
+                  <span>Register Cow</span>
                 </button>
               )}
             </div>

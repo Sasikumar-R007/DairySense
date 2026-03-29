@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, FileSpreadsheet, Calendar, Search } from 'lucide-react';
+import { ArrowLeft, Download, FileSpreadsheet, Calendar, Search, Database } from 'lucide-react';
 import { reportAPI } from '../services/api';
 import MilkMasterLog from './MilkMasterLog';
 import FeedMasterLog from './FeedMasterLog';
@@ -26,6 +26,22 @@ function MasterReport() {
       setLoading(true);
       setError('');
       const result = await reportAPI.getMasterReport(fromDate, toDate);
+      setData(result);
+    } catch (err) {
+      console.error('Failed to load master report:', err);
+      setError(err.message || 'Failed to load report data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFetchOverall = async () => {
+    setFromDate('');
+    setToDate('');
+    try {
+      setLoading(true);
+      setError('');
+      const result = await reportAPI.getMasterReport('', '');
       setData(result);
     } catch (err) {
       console.error('Failed to load master report:', err);
@@ -88,6 +104,11 @@ function MasterReport() {
           <button className="primary-button fetch-btn" onClick={fetchData} disabled={loading}>
             {loading ? <div className="spinner-small"></div> : <Search size={18} />}
             <span>Fetch Data</span>
+          </button>
+          
+          <button className="secondary-button" style={{ marginLeft: '10px' }} onClick={handleFetchOverall} disabled={loading}>
+            {loading ? <div className="spinner-small"></div> : <Database size={18} />}
+            <span>Fetch Overall</span>
           </button>
         </div>
 

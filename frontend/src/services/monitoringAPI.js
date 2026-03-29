@@ -62,34 +62,11 @@ export const monitoringAPI = {
 
 
   /**
-   * Get cows list with metrics
-   * @param {string} date - Optional date in YYYY-MM-DD format
+   * Get Performance history (Feed vs Milk)
+   * @param {number} days - Number of days to fetch
    */
-  getCowsList: async (date = null) => {
-    const params = date ? `?date=${date}` : '';
-    return apiRequest(`${BASE_URL}/cows${params}`, {
-      method: 'GET',
-    });
-  },
-
-  /**
-   * Get cow detail with trend data
-   * @param {string} cowId - Cow ID
-   * @param {string} date - Optional date in YYYY-MM-DD format
-   */
-  getCowDetail: async (cowId, date = null) => {
-    const params = date ? `?date=${date}` : '';
-    return apiRequest(`${BASE_URL}/cows/${cowId}${params}`, {
-      method: 'GET',
-    });
-  },
-
-  /**
-   * Get daily summary
-   * @param {string} date - Date in YYYY-MM-DD format
-   */
-  getDailySummary: async (date) => {
-    return apiRequest(`${BASE_URL}/summary?date=${date}`, {
+  getPerformanceHistory: async (days = 30) => {
+    return apiRequest(`${BASE_URL}/performance-history?days=${days}`, {
       method: 'GET',
     });
   },

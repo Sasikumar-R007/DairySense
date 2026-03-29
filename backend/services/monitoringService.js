@@ -322,3 +322,21 @@ export async function getRatioHistory(days = 30) {
     ratio: row.total_feed > 0 ? parseFloat((row.total_milk / row.total_feed).toFixed(2)) : 0
   }));
 }
+
+export async function getFarmPerformanceHistory(days = 30) {
+  const fromDate = new Date();
+  fromDate.setDate(fromDate.getDate() - days);
+  
+  const result = await pool.query(`
+    SELECT date, SUM(feed_given_kg) as total_feed, SUM(milk_yield_litre) as total_milk
+    FROM daily_cow_metrics 
+    WHERE date >= $1
+    GROUP BY date ORDER BY date ASC
+  `, [fromDate.toISOString().split('T')[0]]);
+  
+  return result.rows.map(row => ({
+    date: new Date(row.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    feed: parseFloat(row.total_feed || 0),
+    milk: parseFloat(row.total_milk || 0)
+  }));
+}

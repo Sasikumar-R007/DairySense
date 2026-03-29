@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, Link as LinkIcon, RefreshCw, BarChart3 } from 'lucide-react';
 import { cowsAPI } from '../services/cowsAPI';
+import { settingsAPI } from '../services/api';
 import './AddCow.css';
 
 function AddCow() {
@@ -12,6 +13,7 @@ function AddCow() {
   const [qrCodeData, setQrCodeData] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [createdCowId, setCreatedCowId] = useState(null);
+  const [cowFormSettings, setCowFormSettings] = useState({ breeds: ['HF', 'Jersey', 'Gir', 'Other'], cow_types: ['normal', 'milking', 'pregnant', 'dry', 'calf', 'Other'] });
   const pollingRef = useRef(null);
   const timeoutRef = useRef(null);
   
@@ -28,6 +30,7 @@ function AddCow() {
     next_vaccination_date: '',
     notes: '',
     custom_breed: '',
+    custom_cow_type: '',
     status: 'ACTIVE'
   });
   
@@ -50,10 +53,16 @@ function AddCow() {
 
   const loadInitialData = async () => {
     try {
-      const cows = await cowsAPI.getAllCows();
+      const [cows, settings] = await Promise.all([
+        cowsAPI.getAllCows(),
+        settingsAPI.getSettings()
+      ]);
       setAvailableCows(cows);
+      if (settings.cow_form_options) {
+        setCowFormSettings(settings.cow_form_options);
+      }
     } catch (error) {
-      console.error('Error loading cows:', error);
+      console.error('Error loading initial data:', error);
     }
   };
 
@@ -140,11 +149,18 @@ function AddCow() {
       return;
     }
 
+    const finalCowType = formData.cow_type === 'Other' ? formData.custom_cow_type : formData.cow_type;
+    if (!finalCowType) {
+      showMessage('error', 'Please specify cow type');
+      return;
+    }
+
     setLoading(true);
     try {
       const submitData = {
         ...formData,
-        breed: formData.breed === 'Other' ? formData.custom_breed : formData.breed
+        breed: formData.breed === 'Other' ? formData.custom_breed : formData.breed,
+        cow_type: formData.cow_type === 'Other' ? formData.custom_cow_type : formData.cow_type
       };
       const response = await cowsAPI.createCow({
         ...submitData,
@@ -576,7 +592,9 @@ function AddCow() {
                     purchase_date: '',
                     last_vaccination_date: '',
                     next_vaccination_date: '',
-                    notes: ''
+                    notes: '',
+                    custom_breed: '',
+                    custom_cow_type: ''
                   });
                   loadInitialData();
                 }} 
@@ -595,35 +613,28 @@ function AddCow() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="cow-form">
-            <div className="form-row">
+            <div className="form-row three-cols">
               <div className="form-group">
-                <label htmlFor="cow_id">Cow ID *</label>
-                <div className="input-with-button">
-                  <input
-                    id="cow_id"
-                    type="text"
-                    name="cow_id"
-                    value={formData.cow_id}
-                    onChange={handleInputChange}
-                    required
-                    disabled
-                    placeholder="Auto-generated from breed, purchase date, and source type"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => generateCowId()}
-                    disabled={generatingId || !formData.breed || !formData.purchase_date || !formData.source_type}
-                    className="generate-button"
-                  >
-                    {generatingId ? 'Generating...' : (
-                      <>
-                        <RefreshCw size={16} style={{ marginRight: '0.5rem' }} />
-                        Regenerate
-                      </>
-                    )}
-                  </button>
+                <label>System Generated ID</label>
+                <div className="readonly-id-display">
+                  {formData.cow_id || 'Generating...'}
                 </div>
               </div>
+
+              <div className="form-group">
+                <label htmlFor="tag_id">Tag ID (Legacy) *</label>
+                <div className="id-input-wrapper">
+                  <input
+                    id="tag_id"
+                    type="text"
+                    name="tag_id"
+                    value={formData.tag_id || `COW${String(availableCows.length + 1).padStart(3, '0')}`}
+                    readOnly
+                    className="readonly-input"
+                  />
+                </div>
+              </div>
+
               <div className="form-group">
                 <label htmlFor="source_type">Source Type *</label>
                 <select
@@ -639,58 +650,86 @@ function AddCow() {
               </div>
             </div>
 
-            <div className="form-row">
+            <div className="form-row three-cols">
               <div className="form-group">
                 <label htmlFor="cow_type">Cow Type *</label>
-                <select
-                  id="cow_type"
-                  name="cow_type"
-                  value={formData.cow_type}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="normal">Normal</option>
-                  <option value="milking">Milking Stage</option>
-                  <option value="pregnant">Pregnant</option>
-                  <option value="dry">Dry</option>
-                  <option value="calf">Calf</option>
-                </select>
+                {formData.cow_type === 'Other' ? (
+                  <div className="input-with-cancel">
+                    <input
+                      id="custom_cow_type"
+                      type="text"
+                      name="custom_cow_type"
+                      value={formData.custom_cow_type}
+                      onChange={handleInputChange}
+                      placeholder="Enter custom cow type"
+                      required
+                      autoFocus
+                    />
+                    <button 
+                      type="button" 
+                      className="cancel-inline"
+                      onClick={() => setFormData(prev => ({ ...prev, cow_type: 'normal', custom_cow_type: '' }))}
+                      title="Back to list"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    id="cow_type"
+                    name="cow_type"
+                    value={formData.cow_type}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    {cowFormSettings.cow_types.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                    {!cowFormSettings.cow_types.includes('Other') && <option value="Other">Other</option>}
+                  </select>
+                )}
               </div>
 
               <div className="form-group">
                 <label htmlFor="breed">Breed *</label>
-                <select
-                  id="breed"
-                  name="breed"
-                  value={formData.breed}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Select Breed</option>
-                  <option value="HF">HF</option>
-                  <option value="Jersey">Jersey</option>
-                  <option value="Gir">Gir</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              
-              {formData.breed === 'Other' && (
-                <div className="form-group">
-                  <label htmlFor="custom_breed">Specify Breed *</label>
-                  <input
-                    id="custom_breed"
-                    type="text"
-                    name="custom_breed"
-                    value={formData.custom_breed}
+                {formData.breed === 'Other' ? (
+                  <div className="input-with-cancel">
+                    <input
+                      id="custom_breed"
+                      type="text"
+                      name="custom_breed"
+                      value={formData.custom_breed}
+                      onChange={handleInputChange}
+                      placeholder="Enter custom breed name"
+                      required
+                      autoFocus
+                    />
+                    <button 
+                      type="button" 
+                      className="cancel-inline"
+                      onClick={() => setFormData(prev => ({ ...prev, breed: '', custom_breed: '' }))}
+                      title="Back to list"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    id="breed"
+                    name="breed"
+                    value={formData.breed}
                     onChange={handleInputChange}
-                    placeholder="Enter custom breed name"
                     required
-                  />
-                </div>
-              )}
-            </div>
+                  >
+                    <option value="">Select Breed</option>
+                    {cowFormSettings.breeds.map(breed => (
+                      <option key={breed} value={breed}>{breed}</option>
+                    ))}
+                    {!cowFormSettings.breeds.includes('Other') && <option value="Other">Other</option>}
+                  </select>
+                )}
+              </div>
 
-            <div className="form-row">
               <div className="form-group">
                 <label htmlFor="status">Status *</label>
                 <select
@@ -704,7 +743,9 @@ function AddCow() {
                   <option value="INACTIVE">Inactive</option>
                 </select>
               </div>
+            </div>
 
+            <div className="form-row three-cols">
               <div className="form-group">
                 <label htmlFor="weight_kg">Weight (kg) *</label>
                 <input
@@ -716,6 +757,17 @@ function AddCow() {
                   min="0"
                   placeholder="Enter weight in kg"
                   required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="date_of_birth">Date of Birth</label>
+                <input
+                  id="date_of_birth"
+                  type="date"
+                  name="date_of_birth"
+                  value={formData.date_of_birth}
+                  onChange={handleInputChange}
                 />
               </div>
 
@@ -777,16 +829,6 @@ function AddCow() {
                     name="date_of_birth"
                     value={formData.date_of_birth}
                     onChange={handleInputChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="purchase_date_hint">Generated Format</label>
-                  <input
-                    id="purchase_date_hint"
-                    type="text"
-                    value={formData.cow_id || 'BREED-MMYY-TYPESEQ'}
-                    disabled
                   />
                 </div>
               </div>

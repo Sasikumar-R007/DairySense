@@ -14,13 +14,15 @@ import {
   updateFeedLog,
   deleteFeedLog,
   createFeedItem,
-  updateFeedItem
+  updateFeedItem,
+  deleteFeedItem
 } from '../services/feedService.js';
 import {
   getWeightGroups,
   getFeedRequirement,
   calculateDailyFeedRecommendation
 } from '../services/feedAllocationService.js';
+import { cowFeedService } from '../services/cowFeedService.js';
 
 const router = express.Router();
 
@@ -63,6 +65,17 @@ router.put('/items/:id', async (req, res) => {
     res.json({ data: updatedItem });
   } catch (error) {
     console.error('Error updating feed item:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/items/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedItem = await deleteFeedItem(id);
+    res.json({ message: 'Feed item soft-deleted successfully', data: deletedItem });
+  } catch (error) {
+    console.error('Error deleting feed item:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -170,4 +183,47 @@ router.delete('/log/:id', async (req, res) => {
   }
 });
 
+
+// Cow-specific and Bulk Feed Routes
+router.get('/cows-by-weight', async (req, res) => {
+  try {
+    const { min, max } = req.query;
+    const cows = await cowFeedService.getCowsInWeightRange(
+      min ? parseFloat(min) : null,
+      max ? parseFloat(max) : null
+    );
+    res.json({ data: cows });
+  } catch (error) {
+    console.error('Error fetching cows by weight:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/bulk-log', async (req, res) => {
+  try {
+    const result = await cowFeedService.logBulkCowFeed(req.body);
+    res.status(201).json({
+      message: `Bulk feed logged for ${result.count} cows`,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error logging bulk feed:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/cow-log', async (req, res) => {
+  try {
+    const result = await cowFeedService.logSingleCowFeed(req.body);
+    res.status(201).json({
+      message: 'Individual cow feed logged successfully',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error logging individual cow feed:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
+
